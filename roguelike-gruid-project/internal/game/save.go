@@ -12,6 +12,7 @@ import (
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/ecs"
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/ecs/components"
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/log"
+	turn "github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/turn_queue"
 	"github.com/sirupsen/logrus"
 )
 
@@ -183,9 +184,19 @@ func (g *Game) SaveGame() error {
 		}
 	}
 
-	// Save turn queue state
+	// Save turn queue state with all entries
+	queueSnapshot := g.turnQueue.Snapshot()
+	savedEntries := make([]SavedTurnQueueEntry, len(queueSnapshot))
+	for i, entry := range queueSnapshot {
+		savedEntries[i] = SavedTurnQueueEntry{
+			EntityID: entry.EntityID,
+			Time:     entry.Time,
+		}
+	}
+
 	saveData.TurnQueue = SavedTurnQueue{
 		CurrentTime: g.turnQueue.CurrentTime,
+		Entries:     savedEntries,
 	}
 
 	// Save messages with timestamps
@@ -572,8 +583,20 @@ func (g *Game) LoadGame() error {
 		}
 	}
 
-	// Restore turn queue
+	// Restore turn queue with all entries
 	g.turnQueue.CurrentTime = saveData.TurnQueue.CurrentTime
+
+	// Convert saved entries back to TurnEntry format
+	queueEntries := make([]turn.TurnEntry, len(saveData.TurnQueue.Entries))
+	for i, savedEntry := range saveData.TurnQueue.Entries {
+		queueEntries[i] = turn.TurnEntry{
+			EntityID: savedEntry.EntityID,
+			Time:     savedEntry.Time,
+		}
+	}
+
+	// Restore the queue from snapshot
+	g.turnQueue.RestoreFromSnapshot(queueEntries)
 
 	// Restore messages with timestamps
 	g.log.Messages = []log.Message{}
