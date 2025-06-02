@@ -4,6 +4,7 @@ import (
 	"math/rand"
 	"time"
 
+	"codeberg.org/anaseto/gruid"
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/config"
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/ecs"
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/log"
@@ -49,4 +50,9 @@ func (g *Game) InitLevel() {
 	g.dungeon = NewMap(config.DungeonWidth, config.DungeonHeight)
 	playerStart := g.dungeon.generateMap(g, config.DungeonWidth, config.DungeonHeight)
 	g.SpawnPlayer(playerStart)
+}
+
+func (g *Game) GetPlayerPosition() gruid.Point {
+	// Use safe accessor - no error handling needed!
+	return g.ecs.GetPositionSafe(g.PlayerID)
 }

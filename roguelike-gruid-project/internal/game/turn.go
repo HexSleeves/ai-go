@@ -1,6 +1,7 @@
 package game
 
 import (
+	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/ecs/components"
 	"github.com/sirupsen/logrus"
 )
 
@@ -40,8 +41,8 @@ func (md *Model) processTurnQueue() {
 		}
 
 		logrus.Debugf("Processing actor: EntityID=%d, Time=%d", turnEntry.EntityID, turnEntry.Time)
-		actor, ok := g.ecs.GetTurnActor(turnEntry.EntityID)
-		if !ok {
+		actor := g.ecs.GetTurnActorSafe(turnEntry.EntityID)
+		if !g.ecs.HasComponent(turnEntry.EntityID, components.CTurnActor) {
 			logrus.Debugf("Error: Entity %d is not a valid actor.", turnEntry.EntityID)
 			continue
 		}

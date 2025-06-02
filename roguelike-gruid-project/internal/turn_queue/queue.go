@@ -216,8 +216,8 @@ func (tq *TurnQueue) CleanupDeadEntities(world *ecs.ECS) CleanupMetrics {
 		} else {
 			removedCount++
 
-			name, ok := world.GetName(entry.EntityID)
-			if !ok {
+			name := world.GetNameSafe(entry.EntityID)
+			if name == "" {
 				name = "Unknown"
 			}
 

@@ -42,9 +42,12 @@ func (g *Game) checkCollision(pos gruid.Point) bool {
 // It checks for map boundaries and collisions with other entities.
 // It returns true if the entity successfully moved, false otherwise (due to wall or collision).
 func (g *Game) EntityBump(entityID ecs.EntityID, delta gruid.Point) (moved bool, err error) {
-	currentPos, ok := g.ecs.GetPosition(entityID)
-	if !ok {
-		return false, fmt.Errorf("entity %d position not found", entityID)
+	// Use safe accessor - no error handling needed!
+	currentPos := g.ecs.GetPositionSafe(entityID)
+
+	// Check if entity actually has a position (zero value check)
+	if currentPos == (gruid.Point{}) && g.ecs.HasPositionSafe(entityID) == false {
+		return false, fmt.Errorf("entity %d has no position component", entityID)
 	}
 
 	newPos := currentPos.Add(delta)
@@ -66,10 +69,11 @@ func (g *Game) EntityBump(entityID ecs.EntityID, delta gruid.Point) (moved bool,
 			// Target is attackable. Queue an AttackAction for the bumping entity.
 			logrus.Debugf("Entity %d bumping into attackable entity %d. Queuing AttackAction.", entityID, otherID)
 
-			// Get the TurnActor component of the bumping entity to queue the action
-			actor, actorOk := g.ecs.GetTurnActor(entityID)
-			if !actorOk {
-				// This should not happen if the entity bumping can take turns
+			// Use safe accessor - no error handling needed!
+			actor := g.ecs.GetTurnActorSafe(entityID)
+
+			// Check if entity actually has a TurnActor component
+			if !g.ecs.HasComponent(entityID, components.CTurnActor) {
 				return false, fmt.Errorf("entity %d cannot perform actions (missing TurnActor)", entityID)
 			}
 

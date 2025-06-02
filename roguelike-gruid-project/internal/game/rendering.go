@@ -47,9 +47,9 @@ func (md *Model) Draw() gruid.Grid {
 	utils.Assert(g.ecs != nil, "ECS is nil")
 	utils.Assert(g.dungeon != nil, "Map is nil")
 
-	// Get player's FOV component *after* FOVSystem runs
-	playerFOVComp, ok := g.ecs.GetFOV(g.PlayerID)
-	if !ok {
+	// Get player's FOV component using safe accessor
+	playerFOVComp := g.ecs.GetFOVSafe(g.PlayerID)
+	if playerFOVComp == nil {
 		// Handle case where player FOV might be missing (though unlikely)
 		logrus.Errorf("Player entity %d missing FOV component in Draw", g.PlayerID)
 		return md.grid // Return the grid even if FOV is missing
@@ -105,8 +105,11 @@ func (md *Model) renderEntitiesSystem(world *ecs.ECS, playerFOV *components.FOV,
 	// Filter entities by visibility and cache their render orders
 	visibleEntities := make([]ecs.EntityID, 0, len(entityIDs))
 	for _, id := range entityIDs {
-		pos, _ := world.GetPosition(id)
-		if playerFOV.IsVisible(pos, mapWidth) {
+		// Use safe accessor - no error handling needed!
+		pos := world.GetPositionSafe(id)
+
+		// Only process entities that actually have positions
+		if world.HasPositionSafe(id) && playerFOV.IsVisible(pos, mapWidth) {
 			visibleEntities = append(visibleEntities, id)
 			renderOrderCache[id] = RenderOrder(world, id)
 		}
@@ -126,7 +129,8 @@ func (md *Model) renderEntitiesSystem(world *ecs.ECS, playerFOV *components.FOV,
 	for _, priority := range priorities {
 		if bucket, ok := orderBuckets[priority]; ok {
 			for _, id := range bucket {
-				pos, _ := world.GetPosition(id)
+				// Use safe accessor - no error handling needed!
+				pos := world.GetPositionSafe(id)
 				drawEntity(world, pos, id, md.grid)
 			}
 		}
@@ -135,8 +139,11 @@ func (md *Model) renderEntitiesSystem(world *ecs.ECS, playerFOV *components.FOV,
 
 // When drawing an entity, check for HitFlash
 func drawEntity(ecs *ecs.ECS, pos gruid.Point, entityID ecs.EntityID, grid gruid.Grid) {
-	renderable, ok := ecs.GetRenderable(entityID)
-	if !ok {
+	// Use safe accessor - no error handling needed!
+	renderable := ecs.GetRenderableSafe(entityID)
+
+	// Only draw if entity actually has a renderable component
+	if !ecs.HasRenderableSafe(entityID) {
 		return
 	}
 

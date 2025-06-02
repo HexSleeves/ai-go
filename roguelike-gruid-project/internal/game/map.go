@@ -131,6 +131,7 @@ func (m *Map) SetExplored(p gruid.Point) {
 	if !m.InBounds(p) {
 		return
 	}
+
 	idx := p.Y*m.Width + p.X
 	sliceIdx := idx / 64
 	bitIdx := uint(idx % 64)

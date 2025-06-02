@@ -39,6 +39,7 @@ func (a MoveAction) Execute(g *Game) (cost uint, err error) {
 		// Bumped into something, action didn't fully succeed in moving
 		return 0, nil // No time cost for a bump
 	}
+
 	return 100, nil // Standard move cost
 }
 
@@ -50,15 +51,19 @@ type AttackAction struct {
 
 // Execute performs the attack action.
 func (a AttackAction) Execute(g *Game) (cost uint, err error) {
-	attackerName, _ := g.ecs.GetName(a.AttackerID)
-	targetName, _ := g.ecs.GetName(a.TargetID)
-	targetHealth, ok := g.ecs.GetHealth(a.TargetID)
+	// Use safe accessors - no error handling needed!
+	attackerName := g.ecs.GetNameSafe(a.AttackerID)
+	targetName := g.ecs.GetNameSafe(a.TargetID)
 
-	if !ok {
+	// Use optional pattern for explicit null handling of health
+	targetHealthOpt := g.ecs.GetHealthOpt(a.TargetID)
+	if targetHealthOpt.IsNone() {
 		// Target might have died between action queuing and execution
 		logrus.Debugf("%s (%d) tries to attack %s (%d), but target has no health component.", attackerName, a.AttackerID, targetName, a.TargetID)
 		return 0, fmt.Errorf("target %d has no health", a.TargetID)
 	}
+
+	targetHealth := targetHealthOpt.Unwrap()
 
 	// --- Basic Damage Calculation ---
 	damage := 1 // Simple fixed damage for now
@@ -118,7 +123,7 @@ func (g *Game) handleEntityDeath(entityID ecs.EntityID, entityName string) {
 
 	// Remove from turn queue
 	g.turnQueue.Remove(entityID)
-	// Remove from spatial grid
-	pos, _ := g.ecs.GetPosition(entityID)
+	// Remove from spatial grid using safe accessor
+	pos := g.ecs.GetPositionSafe(entityID)
 	g.spatialGrid.Remove(entityID, pos)
 }
