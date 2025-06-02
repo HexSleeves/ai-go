@@ -37,9 +37,10 @@ type Game struct {
 	State           GameState
 	waitingForInput bool
 
-	dungeon     *Map
-	ecs         *ecs.ECS
-	spatialGrid *SpatialGrid
+	dungeon         *Map
+	ecs             *ecs.ECS
+	spatialGrid     *SpatialGrid
+	pathfindingMgr  *PathfindingManager
 
 	PlayerID  ecs.EntityID
 	turnQueue *turn.TurnQueue
@@ -74,6 +75,9 @@ func (g *Game) InitLevel() {
 	g.spatialGrid.Clear()
 
 	g.dungeon = NewMap(config.DungeonWidth, config.DungeonHeight)
+
+	// Initialize pathfinding manager after map is created
+	g.pathfindingMgr = NewPathfindingManager(g)
 
 	items := CreateBasicItems()
 	playerStart := g.dungeon.generateMap(g, config.DungeonWidth, config.DungeonHeight, items)
