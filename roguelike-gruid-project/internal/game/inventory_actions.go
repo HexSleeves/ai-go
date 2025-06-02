@@ -50,6 +50,11 @@ func (a PickupAction) Execute(g *Game) error {
 		g.ecs.RemoveEntity(a.ItemID)
 		g.spatialGrid.Remove(a.ItemID, itemPos)
 
+		// Track item collection statistics
+		if a.EntityID == g.PlayerID {
+			g.IncrementItemsCollected()
+		}
+
 		// Log message
 		if a.EntityID == g.PlayerID {
 			g.log.AddMessagef(ui.ColorStatusGood, "You pick up %s.", pickup.Item.Name)

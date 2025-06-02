@@ -21,6 +21,16 @@ const (
 	GameStateMenu
 )
 
+// GameStats tracks various game statistics
+type GameStats struct {
+	StartTime      time.Time     // When the game started
+	PlayTime       time.Duration // Total time played
+	MonstersKilled int           // Number of monsters killed
+	ItemsCollected int           // Number of items collected
+	DamageDealt    int           // Total damage dealt
+	DamageTaken    int           // Total damage taken
+}
+
 // Game represents the main game state.
 type Game struct {
 	Depth           int
@@ -34,6 +44,7 @@ type Game struct {
 	PlayerID  ecs.EntityID
 	turnQueue *turn.TurnQueue
 	log       *log.MessageLog
+	stats     *GameStats
 
 	rand *rand.Rand
 }
@@ -45,6 +56,9 @@ func NewGame() *Game {
 		turnQueue:   turn.NewTurnQueue(),
 		log:         log.NewMessageLog(),
 		spatialGrid: NewSpatialGrid(config.DungeonWidth, config.DungeonHeight),
+		stats: &GameStats{
+			StartTime: time.Now(),
+		},
 	}
 }
 
@@ -85,4 +99,39 @@ func (g *Game) IsGameOver() bool {
 // IsRunning returns true if the game is currently running
 func (g *Game) IsRunning() bool {
 	return g.State == GameStateRunning
+}
+
+// UpdatePlayTime updates the total play time
+func (g *Game) UpdatePlayTime() {
+	if g.stats != nil {
+		g.stats.PlayTime = time.Since(g.stats.StartTime)
+	}
+}
+
+// IncrementMonstersKilled increments the monsters killed counter
+func (g *Game) IncrementMonstersKilled() {
+	if g.stats != nil {
+		g.stats.MonstersKilled++
+	}
+}
+
+// IncrementItemsCollected increments the items collected counter
+func (g *Game) IncrementItemsCollected() {
+	if g.stats != nil {
+		g.stats.ItemsCollected++
+	}
+}
+
+// AddDamageDealt adds to the total damage dealt
+func (g *Game) AddDamageDealt(damage int) {
+	if g.stats != nil {
+		g.stats.DamageDealt += damage
+	}
+}
+
+// AddDamageTaken adds to the total damage taken
+func (g *Game) AddDamageTaken(damage int) {
+	if g.stats != nil {
+		g.stats.DamageTaken += damage
+	}
 }

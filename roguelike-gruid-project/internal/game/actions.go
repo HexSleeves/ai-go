@@ -69,6 +69,13 @@ func (a AttackAction) Execute(g *Game) (cost uint, err error) {
 	damage := 1 // Simple fixed damage for now
 	targetHealth.CurrentHP -= damage
 
+	// Track damage statistics
+	if a.AttackerID == g.PlayerID {
+		g.AddDamageDealt(damage)
+	} else if a.TargetID == g.PlayerID {
+		g.AddDamageTaken(damage)
+	}
+
 	// Determine message color based on who is attacking
 	var msgColor gruid.Color
 	if a.AttackerID == g.PlayerID {
@@ -106,6 +113,11 @@ func (g *Game) handleEntityDeath(entityID ecs.EntityID, entityName string, kille
 		logrus.Info("Player has died. Game over!")
 		g.setGameOverState()
 		return
+	}
+
+	// Track monster kill statistics
+	if killerID == g.PlayerID && g.ecs.HasComponent(entityID, components.CAITag) {
+		g.IncrementMonstersKilled()
 	}
 
 	// Award experience to the killer if it exists

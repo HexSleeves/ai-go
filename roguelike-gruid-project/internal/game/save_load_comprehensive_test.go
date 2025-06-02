@@ -20,17 +20,18 @@ func TestSaveLoadAllComponents(t *testing.T) {
 	expSystem.AwardExperience(playerID, 150) // Should level up
 
 	// Add status effects
+	var status components.StatusEffects
 	if game.ecs.HasStatusEffectsSafe(playerID) {
-		statusEffects := game.ecs.GetStatusEffectsSafe(playerID)
-		statusEffects.Effects = append(statusEffects.Effects, components.StatusEffect{
-			Name:        "Test Buff",
-			Description: "A test status effect",
-			Duration:    10,
-			StrengthMod: 2,
-			AttackMod:   1,
-		})
-		game.ecs.AddComponent(playerID, components.CStatusEffects, statusEffects)
+		status = game.ecs.GetStatusEffectsSafe(playerID)
 	}
+	status.Effects = append(status.Effects, components.StatusEffect{
+		Name:        "Test Buff",
+		Description: "A test status effect",
+		Duration:    10,
+		StrengthMod: 2,
+		AttackMod:   1,
+	})
+	game.ecs.AddComponent(playerID, components.CStatusEffects, status)
 
 	// Spawn a monster with AI to test AI component save/load
 	monsterPos := game.GetPlayerPosition().Add(gruid.Point{X: 3, Y: 3})

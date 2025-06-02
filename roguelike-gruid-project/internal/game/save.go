@@ -188,13 +188,27 @@ func (g *Game) SaveGame() error {
 		CurrentTime: g.turnQueue.CurrentTime,
 	}
 
-	// Save messages
+	// Save messages with timestamps
 	for _, msg := range g.log.Messages {
 		savedMsg := SavedMessage{
-			Text:  msg.Text,
-			Color: uint32(msg.Color),
+			Text:      msg.Text,
+			Color:     uint32(msg.Color),
+			Timestamp: msg.Timestamp,
 		}
 		saveData.Messages = append(saveData.Messages, savedMsg)
+	}
+
+	// Save game statistics
+	if g.stats != nil {
+		// Update play time before saving
+		g.UpdatePlayTime()
+		saveData.GameStats = SavedGameStats{
+			PlayTime:       g.stats.PlayTime,
+			MonstersKilled: g.stats.MonstersKilled,
+			ItemsCollected: g.stats.ItemsCollected,
+			DamageDealt:    g.stats.DamageDealt,
+			DamageTaken:    g.stats.DamageTaken,
+		}
 	}
 
 	// Serialize to JSON
@@ -434,13 +448,13 @@ func (g *Game) LoadGame() error {
 			case "ai_component":
 				if aiData, ok := compData.(map[string]interface{}); ok {
 					aiComponent := components.AIComponent{
-						Behavior:           components.AIBehavior(aiData["Behavior"].(float64)),
-						State:              components.AIState(aiData["State"].(float64)),
-						PatrolRadius:       int(aiData["PatrolRadius"].(float64)),
-						AggroRange:         int(aiData["AggroRange"].(float64)),
-						FleeThreshold:      aiData["FleeThreshold"].(float64),
-						SearchTurns:        int(aiData["SearchTurns"].(float64)),
-						MaxSearchTurns:     int(aiData["MaxSearchTurns"].(float64)),
+						Behavior:       components.AIBehavior(aiData["Behavior"].(float64)),
+						State:          components.AIState(aiData["State"].(float64)),
+						PatrolRadius:   int(aiData["PatrolRadius"].(float64)),
+						AggroRange:     int(aiData["AggroRange"].(float64)),
+						FleeThreshold:  aiData["FleeThreshold"].(float64),
+						SearchTurns:    int(aiData["SearchTurns"].(float64)),
+						MaxSearchTurns: int(aiData["MaxSearchTurns"].(float64)),
 					}
 					// Restore LastKnownPlayerPos
 					if posData, ok := aiData["LastKnownPlayerPos"].(map[string]interface{}); ok {
@@ -561,11 +575,23 @@ func (g *Game) LoadGame() error {
 	// Restore turn queue
 	g.turnQueue.CurrentTime = saveData.TurnQueue.CurrentTime
 
-	// Restore messages
+	// Restore messages with timestamps
 	g.log.Messages = []log.Message{}
 	for _, savedMsg := range saveData.Messages {
-		g.log.AddMessage(savedMsg.Text, gruid.Color(savedMsg.Color))
+		g.log.AddMessageWithTimestamp(savedMsg.Text, gruid.Color(savedMsg.Color), savedMsg.Timestamp)
 	}
+
+	// Restore game statistics
+	if g.stats == nil {
+		g.stats = &GameStats{}
+	}
+	g.stats.PlayTime = saveData.GameStats.PlayTime
+	g.stats.MonstersKilled = saveData.GameStats.MonstersKilled
+	g.stats.ItemsCollected = saveData.GameStats.ItemsCollected
+	g.stats.DamageDealt = saveData.GameStats.DamageDealt
+	g.stats.DamageTaken = saveData.GameStats.DamageTaken
+	// Adjust start time to account for loaded play time
+	g.stats.StartTime = time.Now().Add(-g.stats.PlayTime)
 
 	logrus.Infof("Game loaded from %s", savePath)
 	return nil
