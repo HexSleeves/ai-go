@@ -67,3 +67,29 @@ serve-wasm: build-wasm
 # Generate documentation
 docs:
     cd roguelike-gruid-project && go doc -all ./... > ../docs/api.txt
+
+# Run benchmarks
+bench:
+    cd roguelike-gruid-project && go test -bench=. ./...
+
+# Run benchmarks with memory profiling
+bench-mem:
+    cd roguelike-gruid-project && go test -bench=. -benchmem ./...
+
+# Profile CPU usage
+profile-cpu:
+    cd roguelike-gruid-project && go test -bench=. -cpuprofile=cpu.prof ./...
+
+# Profile memory usage
+profile-mem:
+    cd roguelike-gruid-project && go test -bench=. -memprofile=mem.prof ./...
+
+# Test coverage
+coverage:
+    cd roguelike-gruid-project && go test -coverprofile=coverage.out ./...
+    cd roguelike-gruid-project && go tool cover -html=coverage.out -o ../docs/coverage.html
+
+# Test coverage with verbose output
+coverage-verbose:
+    cd roguelike-gruid-project && go test -v -coverprofile=coverage.out ./...
+    cd roguelike-gruid-project && go tool cover -func=coverage.out
