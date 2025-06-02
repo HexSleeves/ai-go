@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"codeberg.org/anaseto/gruid"
+	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/ui"
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/utils"
 	"github.com/sirupsen/logrus"
 )
@@ -26,6 +27,11 @@ type Model struct {
 	game *Game
 	mode mode
 
+	// UI components
+	camera       *ui.Camera
+	statsPanel   *ui.StatsPanel
+	messagePanel *ui.MessagePanel
+
 	// Debug information
 	lastUpdateTime time.Time
 	updateCount    uint64
@@ -38,6 +44,9 @@ func NewModel(grid gruid.Grid) *Model {
 		grid:           grid,
 		game:           NewGame(),
 		mode:           modeNormal,
+		camera:         ui.NewCamera(40, 12), // Center of default map
+		statsPanel:     ui.NewStatsPanel(),
+		messagePanel:   ui.NewMessagePanel(),
 		lastUpdateTime: time.Now(),
 	}
 }

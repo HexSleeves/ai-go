@@ -31,6 +31,9 @@ var KEYS_NORMAL = map[gruid.Key]playerAction{
 	"L":                 ActionLoad,
 	"C":                 ActionCharacterSheet,
 	"?":                 ActionHelp,
+	gruid.KeyPageUp:     ActionScrollMessagesUp,
+	gruid.KeyPageDown:   ActionScrollMessagesDown,
+	"M":                 ActionScrollMessagesBottom,
 }
 
 func keyToDir(k playerAction) (p gruid.Point) {
