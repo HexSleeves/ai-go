@@ -25,6 +25,7 @@ const (
 type GameStats struct {
 	StartTime      time.Time     // When the game started
 	PlayTime       time.Duration // Total time played
+	TurnCount      int           // Total number of turns taken
 	MonstersKilled int           // Number of monsters killed
 	ItemsCollected int           // Number of items collected
 	DamageDealt    int           // Total damage dealt
@@ -137,6 +138,13 @@ func (g *Game) AddDamageDealt(damage int) {
 func (g *Game) AddDamageTaken(damage int) {
 	if g.stats != nil {
 		g.stats.DamageTaken += damage
+	}
+}
+
+// IncrementTurnCount increments the turn counter
+func (g *Game) IncrementTurnCount() {
+	if g.stats != nil {
+		g.stats.TurnCount++
 	}
 }
 

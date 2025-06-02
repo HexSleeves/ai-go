@@ -89,6 +89,9 @@ func (md *Model) processTurnQueue() {
 		// Update the game time and schedule next turn
 		g.turnQueue.CurrentTime = turnEntry.Time + uint64(cost)
 		g.turnQueue.Add(turnEntry.EntityID, g.turnQueue.CurrentTime)
+
+		// Increment turn count for statistics
+		g.IncrementTurnCount()
 	}
 
 	logrus.Debug("========= processTurnQueue ended (iteration limit reached) =========")
