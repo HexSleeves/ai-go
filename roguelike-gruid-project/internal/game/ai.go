@@ -109,19 +109,63 @@ func (g *Game) updateAIState(entityID ecs.EntityID, aiComp *components.AICompone
 	}
 }
 
-// chasePlayer moves towards the player
+// chasePlayer moves towards the player using pathfinding
 func (g *Game) chasePlayer(entityID ecs.EntityID, pos, playerPos gruid.Point) GameAction {
+	// Use pathfinding if available, otherwise fall back to simple movement
+	if g.pathfindingMgr != nil {
+		// Update pathfinding to target the player
+		g.pathfindingMgr.UpdatePathfinding(entityID, playerPos, StrategyDirect)
+
+		// Get the next move from pathfinding
+		direction := g.pathfindingMgr.GetPathfindingMove(entityID)
+		if direction != (gruid.Point{}) {
+			return MoveAction{Direction: direction, EntityID: entityID}
+		}
+	}
+
+	// Fallback to simple directional movement
 	direction := getDirectionTowards(pos, playerPos)
 	return MoveAction{Direction: direction, EntityID: entityID}
 }
 
-// fleeFromPlayer moves away from the player
+// fleeFromPlayer moves away from the player using pathfinding
 func (g *Game) fleeFromPlayer(entityID ecs.EntityID, pos, playerPos gruid.Point) GameAction {
+	// Use pathfinding if available, otherwise fall back to simple movement
+	if g.pathfindingMgr != nil {
+		// Calculate a flee target (opposite direction from player)
+		fleeDirection := getDirectionAway(pos, playerPos)
+		fleeTarget := pos.Add(fleeDirection.Mul(5)) // Flee 5 steps away
+
+		// Clamp to map bounds
+		if fleeTarget.X < 0 {
+			fleeTarget.X = 0
+		}
+		if fleeTarget.Y < 0 {
+			fleeTarget.Y = 0
+		}
+		if fleeTarget.X >= g.dungeon.Width {
+			fleeTarget.X = g.dungeon.Width - 1
+		}
+		if fleeTarget.Y >= g.dungeon.Height {
+			fleeTarget.Y = g.dungeon.Height - 1
+		}
+
+		// Update pathfinding to flee target with entity avoidance
+		g.pathfindingMgr.UpdatePathfinding(entityID, fleeTarget, StrategyAvoidEntities)
+
+		// Get the next move from pathfinding
+		direction := g.pathfindingMgr.GetPathfindingMove(entityID)
+		if direction != (gruid.Point{}) {
+			return MoveAction{Direction: direction, EntityID: entityID}
+		}
+	}
+
+	// Fallback to simple directional movement
 	direction := getDirectionAway(pos, playerPos)
 	return MoveAction{Direction: direction, EntityID: entityID}
 }
 
-// searchForPlayer moves towards last known player position
+// searchForPlayer moves towards last known player position using pathfinding
 func (g *Game) searchForPlayer(entityID ecs.EntityID, aiComp *components.AIComponent, pos gruid.Point) GameAction {
 	if pos == aiComp.LastKnownPlayerPos {
 		// Reached last known position, look around randomly
@@ -132,16 +176,39 @@ func (g *Game) searchForPlayer(entityID ecs.EntityID, aiComp *components.AICompo
 		return MoveAction{Direction: direction, EntityID: entityID}
 	}
 
+	// Use pathfinding if available, otherwise fall back to simple movement
+	if g.pathfindingMgr != nil {
+		// Update pathfinding to target the last known player position
+		g.pathfindingMgr.UpdatePathfinding(entityID, aiComp.LastKnownPlayerPos, StrategyDirect)
+
+		// Get the next move from pathfinding
+		direction := g.pathfindingMgr.GetPathfindingMove(entityID)
+		if direction != (gruid.Point{}) {
+			return MoveAction{Direction: direction, EntityID: entityID}
+		}
+	}
+
+	// Fallback to simple directional movement
 	direction := getDirectionTowards(pos, aiComp.LastKnownPlayerPos)
 	return MoveAction{Direction: direction, EntityID: entityID}
 }
 
-// patrolArea moves around the home position
+// patrolArea moves around the home position using pathfinding
 func (g *Game) patrolArea(entityID ecs.EntityID, aiComp *components.AIComponent, pos gruid.Point) GameAction {
 	homeDistance := manhattanDistance(pos, aiComp.HomePosition)
 
 	if homeDistance > aiComp.PatrolRadius {
-		// Return to home area
+		// Return to home area using pathfinding
+		if g.pathfindingMgr != nil {
+			g.pathfindingMgr.UpdatePathfinding(entityID, aiComp.HomePosition, StrategyDirect)
+
+			direction := g.pathfindingMgr.GetPathfindingMove(entityID)
+			if direction != (gruid.Point{}) {
+				return MoveAction{Direction: direction, EntityID: entityID}
+			}
+		}
+
+		// Fallback to simple directional movement
 		direction := getDirectionTowards(pos, aiComp.HomePosition)
 		return MoveAction{Direction: direction, EntityID: entityID}
 	}

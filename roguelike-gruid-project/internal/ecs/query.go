@@ -261,3 +261,12 @@ func (ecs *ECS) GetAITag(id EntityID) (components.AITag, bool) {
 func (ecs *ECS) GetCorpseTag(id EntityID) (components.CorpseTag, bool) {
 	return GetComponentTyped[components.CorpseTag](ecs, id, components.CCorpseTag)
 }
+
+// GetPathfindingComponent returns the PathfindingComponent for an entity.
+func (ecs *ECS) GetPathfindingComponent(id EntityID) (*components.PathfindingComponent, bool) {
+	comp, ok := GetComponentTyped[components.PathfindingComponent](ecs, id, components.CPathfindingComponent)
+	if !ok {
+		return nil, false
+	}
+	return &comp, true
+}

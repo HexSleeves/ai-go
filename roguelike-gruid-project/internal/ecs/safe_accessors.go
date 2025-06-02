@@ -202,3 +202,14 @@ func (ecs *ECS) HasStaminaSafe(id EntityID) bool {
 func (ecs *ECS) HasStatusEffectsSafe(id EntityID) bool {
 	return ecs.HasComponent(id, components.CStatusEffects)
 }
+
+// GetPathfindingComponentSafe returns the PathfindingComponent for an entity, or nil if not found.
+func (ecs *ECS) GetPathfindingComponentSafe(id EntityID) *components.PathfindingComponent {
+	comp, _ := ecs.GetPathfindingComponent(id)
+	return comp
+}
+
+// HasPathfindingComponentSafe returns true if the entity has a PathfindingComponent.
+func (ecs *ECS) HasPathfindingComponentSafe(id EntityID) bool {
+	return ecs.HasComponent(id, components.CPathfindingComponent)
+}

@@ -29,9 +29,10 @@ const (
 	CSkills         ComponentType = "Skills"
 	CCombat         ComponentType = "Combat"
 	CMana           ComponentType = "Mana"
-	CStamina        ComponentType = "Stamina"
-	CStatusEffects  ComponentType = "StatusEffects"
-	CTurnActor      ComponentType = "TurnActor"
+	CStamina             ComponentType = "Stamina"
+	CStatusEffects       ComponentType = "StatusEffects"
+	CTurnActor           ComponentType = "TurnActor"
+	CPathfindingComponent ComponentType = "PathfindingComponent"
 )
 
 var TypeToComponent = map[ComponentType]reflect.Type{
@@ -53,9 +54,10 @@ var TypeToComponent = map[ComponentType]reflect.Type{
 	CSkills:         reflect.TypeOf(Skills{}),
 	CCombat:         reflect.TypeOf(Combat{}),
 	CMana:           reflect.TypeOf(Mana{}),
-	CStamina:        reflect.TypeOf(Stamina{}),
-	CStatusEffects:  reflect.TypeOf(StatusEffects{}),
-	CTurnActor:      reflect.TypeOf(TurnActor{}),
+	CStamina:             reflect.TypeOf(Stamina{}),
+	CStatusEffects:       reflect.TypeOf(StatusEffects{}),
+	CTurnActor:           reflect.TypeOf(TurnActor{}),
+	CPathfindingComponent: reflect.TypeOf(PathfindingComponent{}),
 }
 
 // GetGoType returns the corresponding Go type for a ComponentType
