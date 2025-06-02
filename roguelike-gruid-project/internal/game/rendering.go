@@ -47,6 +47,32 @@ func (md *Model) Draw() gruid.Grid {
 	utils.Assert(g.ecs != nil, "ECS is nil")
 	utils.Assert(g.dungeon != nil, "Map is nil")
 
+	// Clear the grid before drawing
+	md.grid.Fill(gruid.Cell{Rune: ' '})
+
+	// Handle different screen modes
+	switch md.mode {
+	case modeCharacterSheet:
+		md.characterScreen.Render(md.grid, &gameDataAdapter{g})
+		return md.grid
+
+	case modeInventory:
+		md.inventoryScreen.Render(md.grid, &gameDataAdapter{g})
+		return md.grid
+
+	case modeFullMessageLog:
+		md.fullMessageScreen.Render(md.grid, g.MessageLog())
+		return md.grid
+
+	case modeNormal:
+		// Normal game rendering
+		break
+
+	default:
+		// Default to normal mode
+		break
+	}
+
 	// Get player's FOV component using safe accessor
 	playerFOVComp := g.ecs.GetFOVSafe(g.PlayerID)
 	if playerFOVComp == nil {
@@ -58,9 +84,6 @@ func (md *Model) Draw() gruid.Grid {
 	// Update camera to follow player
 	playerPos := g.GetPlayerPosition()
 	md.camera.Update(playerPos.X, playerPos.Y)
-
-	// Clear the grid before drawing
-	md.grid.Fill(gruid.Cell{Rune: ' '})
 
 	// Draw the map in the viewport
 	md.drawMapViewport(g, playerFOVComp)

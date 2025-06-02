@@ -19,6 +19,9 @@ type mode int
 const (
 	modeNormal mode = iota
 	modeQuit
+	modeCharacterSheet
+	modeInventory
+	modeFullMessageLog
 )
 
 // Model represents the game model that implements gruid.Model
@@ -31,6 +34,11 @@ type Model struct {
 	camera       *ui.Camera
 	statsPanel   *ui.StatsPanel
 	messagePanel *ui.MessagePanel
+
+	// Full-screen UI components
+	characterScreen   *ui.CharacterScreen
+	inventoryScreen   *ui.InventoryScreen
+	fullMessageScreen *ui.FullMessageScreen
 
 	// Debug information
 	lastUpdateTime time.Time
@@ -53,6 +61,9 @@ func NewModel(grid gruid.Grid) *Model {
 		camera:               ui.NewCamera(40, 12), // Center of default map
 		statsPanel:           ui.NewStatsPanel(),
 		messagePanel:         ui.NewMessagePanel(),
+		characterScreen:      ui.NewCharacterScreen(),
+		inventoryScreen:      ui.NewInventoryScreen(),
+		fullMessageScreen:    ui.NewFullMessageScreen(),
 		lastUpdateTime:       time.Now(),
 		showPathfindingDebug: false,
 		eventQueue:           make([]gruid.Msg, 0),

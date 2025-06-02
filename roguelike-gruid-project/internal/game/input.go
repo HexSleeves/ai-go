@@ -34,6 +34,17 @@ var KEYS_NORMAL = map[gruid.Key]playerAction{
 	gruid.KeyPageUp:     ActionScrollMessagesUp,
 	gruid.KeyPageDown:   ActionScrollMessagesDown,
 	"M":                 ActionScrollMessagesBottom,
+	"V":                 ActionFullMessageLog,
+}
+
+// KEYS_SCREEN defines key bindings for full-screen UI modes
+var KEYS_SCREEN = map[gruid.Key]playerAction{
+	gruid.KeyEscape:     ActionCloseScreen,
+	"q":                 ActionCloseScreen,
+	gruid.KeyPageUp:     ActionScrollMessagesUp,
+	gruid.KeyPageDown:   ActionScrollMessagesDown,
+	"k":                 ActionScrollMessagesUp,
+	"j":                 ActionScrollMessagesDown,
 }
 
 func keyToDir(k playerAction) (p gruid.Point) {
