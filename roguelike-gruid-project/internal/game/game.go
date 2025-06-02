@@ -139,3 +139,33 @@ func (g *Game) AddDamageTaken(damage int) {
 		g.stats.DamageTaken += damage
 	}
 }
+
+// ECS returns the ECS system for UI access
+func (g *Game) ECS() *ecs.ECS {
+	return g.ecs
+}
+
+// Stats returns the game statistics for UI access
+func (g *Game) Stats() *GameStats {
+	return g.stats
+}
+
+// MessageLog returns the message log for UI access
+func (g *Game) MessageLog() *log.MessageLog {
+	return g.log
+}
+
+// GetPlayerID returns the player entity ID for UI access
+func (g *Game) GetPlayerID() ecs.EntityID {
+	return g.PlayerID
+}
+
+// GetDepth returns the current dungeon depth for UI access
+func (g *Game) GetDepth() int {
+	return g.Depth
+}
+
+// GetMonstersKilled returns the number of monsters killed
+func (gs *GameStats) GetMonstersKilled() int {
+	return gs.MonstersKilled
+}

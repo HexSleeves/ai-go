@@ -27,6 +27,9 @@ const (
 	ActionLoad
 	ActionCharacterSheet
 	ActionHelp
+	ActionScrollMessagesUp
+	ActionScrollMessagesDown
+	ActionScrollMessagesBottom
 )
 
 type actionError int
@@ -93,6 +96,15 @@ func (md *Model) normalModeAction(playerAction playerAction) (again bool, eff gr
 
 	case ActionHelp:
 		return md.handleHelpAction()
+
+	case ActionScrollMessagesUp:
+		return md.handleScrollMessagesUpAction()
+
+	case ActionScrollMessagesDown:
+		return md.handleScrollMessagesDownAction()
+
+	case ActionScrollMessagesBottom:
+		return md.handleScrollMessagesBottomAction()
 
 	default:
 		logrus.Debugf("Unknown action: %v\n", playerAction)
@@ -366,6 +378,29 @@ func (md *Model) handleHelpAction() (again bool, eff gruid.Effect, err error) {
 	g.log.AddMessagef(ui.ColorStatusGood, "L - Load game")
 	g.log.AddMessagef(ui.ColorStatusGood, "Q - Quit")
 	g.log.AddMessagef(ui.ColorStatusGood, "? - This help")
+	g.log.AddMessagef(ui.ColorStatusGood, "")
+	g.log.AddMessagef(ui.ColorStatusGood, "=== Messages ===")
+	g.log.AddMessagef(ui.ColorStatusGood, "Page Up - Scroll messages up")
+	g.log.AddMessagef(ui.ColorStatusGood, "Page Down - Scroll messages down")
+	g.log.AddMessagef(ui.ColorStatusGood, "M - Jump to latest messages")
 
+	return true, eff, nil // Don't consume turn
+}
+
+// handleScrollMessagesUpAction scrolls the message log up
+func (md *Model) handleScrollMessagesUpAction() (again bool, eff gruid.Effect, err error) {
+	md.messagePanel.ScrollUp(md.game.MessageLog())
+	return true, eff, nil // Don't consume turn
+}
+
+// handleScrollMessagesDownAction scrolls the message log down
+func (md *Model) handleScrollMessagesDownAction() (again bool, eff gruid.Effect, err error) {
+	md.messagePanel.ScrollDown()
+	return true, eff, nil // Don't consume turn
+}
+
+// handleScrollMessagesBottomAction scrolls to the bottom of the message log
+func (md *Model) handleScrollMessagesBottomAction() (again bool, eff gruid.Effect, err error) {
+	md.messagePanel.ScrollToBottom()
 	return true, eff, nil // Don't consume turn
 }
