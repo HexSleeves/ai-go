@@ -409,6 +409,151 @@ func (g *Game) LoadGame() error {
 					}
 					g.ecs.AddComponent(entityID, components.CExperience, experience)
 				}
+
+			case "item_pickup":
+				if pickupData, ok := compData.(map[string]interface{}); ok {
+					pickup := components.ItemPickup{
+						Quantity: int(pickupData["Quantity"].(float64)),
+					}
+					// Restore the Item
+					if itemData, ok := pickupData["Item"].(map[string]interface{}); ok {
+						pickup.Item = components.Item{
+							Name:        itemData["Name"].(string),
+							Description: itemData["Description"].(string),
+							Type:        components.ItemType(itemData["Type"].(float64)),
+							Glyph:       rune(itemData["Glyph"].(float64)),
+							Color:       gruid.Color(itemData["Color"].(float64)),
+							Value:       int(itemData["Value"].(float64)),
+							Stackable:   itemData["Stackable"].(bool),
+							MaxStack:    int(itemData["MaxStack"].(float64)),
+						}
+					}
+					g.ecs.AddComponent(entityID, components.CItemPickup, pickup)
+				}
+
+			case "ai_component":
+				if aiData, ok := compData.(map[string]interface{}); ok {
+					aiComponent := components.AIComponent{
+						Behavior:           components.AIBehavior(aiData["Behavior"].(float64)),
+						State:              components.AIState(aiData["State"].(float64)),
+						PatrolRadius:       int(aiData["PatrolRadius"].(float64)),
+						AggroRange:         int(aiData["AggroRange"].(float64)),
+						FleeThreshold:      aiData["FleeThreshold"].(float64),
+						SearchTurns:        int(aiData["SearchTurns"].(float64)),
+						MaxSearchTurns:     int(aiData["MaxSearchTurns"].(float64)),
+					}
+					// Restore LastKnownPlayerPos
+					if posData, ok := aiData["LastKnownPlayerPos"].(map[string]interface{}); ok {
+						aiComponent.LastKnownPlayerPos = gruid.Point{
+							X: int(posData["X"].(float64)),
+							Y: int(posData["Y"].(float64)),
+						}
+					}
+					// Restore HomePosition
+					if homeData, ok := aiData["HomePosition"].(map[string]interface{}); ok {
+						aiComponent.HomePosition = gruid.Point{
+							X: int(homeData["X"].(float64)),
+							Y: int(homeData["Y"].(float64)),
+						}
+					}
+					g.ecs.AddComponent(entityID, components.CAIComponent, aiComponent)
+				}
+
+			case "stats":
+				if statsData, ok := compData.(map[string]interface{}); ok {
+					stats := components.Stats{
+						Strength:     int(statsData["Strength"].(float64)),
+						Dexterity:    int(statsData["Dexterity"].(float64)),
+						Constitution: int(statsData["Constitution"].(float64)),
+						Intelligence: int(statsData["Intelligence"].(float64)),
+						Wisdom:       int(statsData["Wisdom"].(float64)),
+						Charisma:     int(statsData["Charisma"].(float64)),
+					}
+					g.ecs.AddComponent(entityID, components.CStats, stats)
+				}
+
+			case "skills":
+				if skillsData, ok := compData.(map[string]interface{}); ok {
+					skills := components.Skills{
+						MeleeWeapons:  int(skillsData["MeleeWeapons"].(float64)),
+						RangedWeapons: int(skillsData["RangedWeapons"].(float64)),
+						Defense:       int(skillsData["Defense"].(float64)),
+						Stealth:       int(skillsData["Stealth"].(float64)),
+						Perception:    int(skillsData["Perception"].(float64)),
+						Medicine:      int(skillsData["Medicine"].(float64)),
+						Crafting:      int(skillsData["Crafting"].(float64)),
+						Evocation:     int(skillsData["Evocation"].(float64)),
+						Conjuration:   int(skillsData["Conjuration"].(float64)),
+						Enchantment:   int(skillsData["Enchantment"].(float64)),
+						Divination:    int(skillsData["Divination"].(float64)),
+						Lockpicking:   int(skillsData["Lockpicking"].(float64)),
+					}
+					g.ecs.AddComponent(entityID, components.CSkills, skills)
+				}
+
+			case "combat":
+				if combatData, ok := compData.(map[string]interface{}); ok {
+					combat := components.Combat{
+						AttackPower:    int(combatData["AttackPower"].(float64)),
+						Defense:        int(combatData["Defense"].(float64)),
+						Accuracy:       int(combatData["Accuracy"].(float64)),
+						DodgeChance:    int(combatData["DodgeChance"].(float64)),
+						CriticalChance: int(combatData["CriticalChance"].(float64)),
+						CriticalDamage: int(combatData["CriticalDamage"].(float64)),
+					}
+					g.ecs.AddComponent(entityID, components.CCombat, combat)
+				}
+
+			case "mana":
+				if manaData, ok := compData.(map[string]interface{}); ok {
+					mana := components.Mana{
+						CurrentMP: int(manaData["CurrentMP"].(float64)),
+						MaxMP:     int(manaData["MaxMP"].(float64)),
+						RegenRate: int(manaData["RegenRate"].(float64)),
+					}
+					g.ecs.AddComponent(entityID, components.CMana, mana)
+				}
+
+			case "stamina":
+				if staminaData, ok := compData.(map[string]interface{}); ok {
+					stamina := components.Stamina{
+						CurrentSP: int(staminaData["CurrentSP"].(float64)),
+						MaxSP:     int(staminaData["MaxSP"].(float64)),
+						RegenRate: int(staminaData["RegenRate"].(float64)),
+					}
+					g.ecs.AddComponent(entityID, components.CStamina, stamina)
+				}
+
+			case "status_effects":
+				if effectsData, ok := compData.(map[string]interface{}); ok {
+					statusEffects := components.StatusEffects{
+						Effects: []components.StatusEffect{},
+					}
+					// Restore effects array
+					if effectsArray, ok := effectsData["Effects"].([]interface{}); ok {
+						for _, effectData := range effectsArray {
+							if effectMap, ok := effectData.(map[string]interface{}); ok {
+								effect := components.StatusEffect{
+									Name:            effectMap["Name"].(string),
+									Description:     effectMap["Description"].(string),
+									Duration:        int(effectMap["Duration"].(float64)),
+									StrengthMod:     int(effectMap["StrengthMod"].(float64)),
+									DexterityMod:    int(effectMap["DexterityMod"].(float64)),
+									ConstitutionMod: int(effectMap["ConstitutionMod"].(float64)),
+									IntelligenceMod: int(effectMap["IntelligenceMod"].(float64)),
+									WisdomMod:       int(effectMap["WisdomMod"].(float64)),
+									CharismaMod:     int(effectMap["CharismaMod"].(float64)),
+									AttackMod:       int(effectMap["AttackMod"].(float64)),
+									DefenseMod:      int(effectMap["DefenseMod"].(float64)),
+									AccuracyMod:     int(effectMap["AccuracyMod"].(float64)),
+									DodgeMod:        int(effectMap["DodgeMod"].(float64)),
+								}
+								statusEffects.Effects = append(statusEffects.Effects, effect)
+							}
+						}
+					}
+					g.ecs.AddComponent(entityID, components.CStatusEffects, statusEffects)
+				}
 			}
 		}
 	}

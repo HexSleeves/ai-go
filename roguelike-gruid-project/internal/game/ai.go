@@ -57,6 +57,10 @@ func (g *Game) updateAIState(entityID ecs.EntityID, aiComp *components.AICompone
 
 	// Check if should flee
 	if hasHealth && aiComp.FleeThreshold > 0 {
+		if health.MaxHP == 0 { // corrupt component – bail out
+			return
+		}
+
 		healthPercent := float64(health.CurrentHP) / float64(health.MaxHP)
 		if healthPercent <= aiComp.FleeThreshold && canSeePlayer {
 			aiComp.State = components.AIStateFleeing
@@ -64,17 +68,17 @@ func (g *Game) updateAIState(entityID ecs.EntityID, aiComp *components.AICompone
 		}
 	}
 
-	// Check if can see player and should chase
+	// If adjacent, always attack first
+	if distanceToPlayer == 1 {
+		aiComp.State = components.AIStateAttacking
+		return
+	}
+
+	// Otherwise, chase when in aggro range and player is visible
 	if canSeePlayer && distanceToPlayer <= aiComp.AggroRange {
 		aiComp.State = components.AIStateChasing
 		aiComp.LastKnownPlayerPos = playerPos
 		aiComp.SearchTurns = 0
-		return
-	}
-
-	// Check if adjacent to player (attack)
-	if distanceToPlayer == 1 {
-		aiComp.State = components.AIStateAttacking
 		return
 	}
 
