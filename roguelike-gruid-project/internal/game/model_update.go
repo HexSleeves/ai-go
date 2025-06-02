@@ -105,6 +105,8 @@ func (md *Model) handlePlayerInput(msg gruid.Msg) gruid.Effect {
 		return nil
 	case modeNormal:
 		effect = md.processNormalModeInput(msg)
+	case modeCharacterSheet, modeInventory, modeFullMessageLog:
+		effect = md.processScreenModeInput(msg)
 	default:
 		logrus.Warnf("Unexpected game mode: %v", md.mode)
 		return nil
@@ -126,6 +128,17 @@ func (md *Model) processNormalModeInput(msg gruid.Msg) gruid.Effect {
 	}
 }
 
+// processScreenModeInput handles input during full-screen UI modes
+func (md *Model) processScreenModeInput(msg gruid.Msg) gruid.Effect {
+	switch msg := msg.(type) {
+	case gruid.MsgKeyDown:
+		return md.handleScreenKeyDown(msg)
+	default:
+		logrus.Debugf("Unhandled message type in screen mode: %T", msg)
+		return nil
+	}
+}
+
 // handleKeyDown processes keyboard input
 func (md *Model) handleKeyDown(msg gruid.MsgKeyDown) gruid.Effect {
 	again, effect, err := md.normalModeKeyDown(msg.Key, msg.Mod&gruid.ModShift != 0)
@@ -138,6 +151,21 @@ func (md *Model) handleKeyDown(msg gruid.MsgKeyDown) gruid.Effect {
 	}
 
 	return md.EndTurn()
+}
+
+// handleScreenKeyDown processes keyboard input in screen modes
+func (md *Model) handleScreenKeyDown(msg gruid.MsgKeyDown) gruid.Effect {
+	again, effect, err := md.screenModeKeyDown(msg.Key)
+	if err != nil {
+		logrus.WithError(err).Debug("Error processing screen key down")
+	}
+
+	if again {
+		return effect
+	}
+
+	// Screen modes don't end turns, just return the effect
+	return effect
 }
 
 // handleMouse processes mouse input
@@ -166,4 +194,45 @@ func (md *Model) normalModeKeyDown(key gruid.Key, shift bool) (again bool, effec
 		err = fmt.Errorf("key '%s' does nothing. Type ? for help", key)
 	}
 	return again, effect, err
+}
+
+// screenModeKeyDown processes a key press in screen modes
+func (md *Model) screenModeKeyDown(key gruid.Key) (again bool, effect gruid.Effect, err error) {
+	action := KEYS_SCREEN[key]
+	again, effect, err = md.screenModeAction(action)
+	if _, ok := err.(actionError); ok {
+		err = fmt.Errorf("key '%s' does nothing in this screen", key)
+	}
+	return again, effect, err
+}
+
+// screenModeAction processes actions in screen modes
+func (md *Model) screenModeAction(action playerAction) (again bool, effect gruid.Effect, err error) {
+	switch action {
+	case ActionCloseScreen:
+		md.mode = modeNormal
+		return true, effect, nil
+
+	case ActionScrollMessagesUp:
+		switch md.mode {
+		case modeFullMessageLog:
+			md.fullMessageScreen.ScrollUp(md.game.MessageLog(), 1)
+		case modeInventory:
+			md.inventoryScreen.ScrollUp()
+		}
+		return true, effect, nil
+
+	case ActionScrollMessagesDown:
+		switch md.mode {
+		case modeFullMessageLog:
+			md.fullMessageScreen.ScrollDown(1)
+		case modeInventory:
+			inventory := md.game.ecs.GetInventorySafe(md.game.PlayerID)
+			md.inventoryScreen.ScrollDown(len(inventory.Items))
+		}
+		return true, effect, nil
+
+	default:
+		return true, effect, actionErrorUnknown
+	}
 }

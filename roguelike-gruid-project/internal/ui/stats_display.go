@@ -157,6 +157,9 @@ func (sp *StatsPanel) drawEquipment(grid gruid.Grid, ecs *ecs.ECS, playerID ecs.
 
 // drawGameStats renders game statistics
 func (sp *StatsPanel) drawGameStats(grid gruid.Grid, gameData GameData, x, y, width int) int {
+	// Add spacing
+	y++
+
 	// Depth
 	depthText := fmt.Sprintf("Depth: %d", gameData.GetDepth())
 	sp.drawLine(grid, depthText, x, y, ColorUIText)

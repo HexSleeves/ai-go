@@ -8,7 +8,53 @@ The UI has been completely redesigned to provide a classic roguelike experience 
 
 ## Features Implemented
 
-### 1. Message Log System ✅
+### 1. Character Screen ✅
+
+**Location**: `internal/ui/character_screen.go`
+
+- **Full-screen character information** accessible with 'C' key
+- **Complete attribute display** (STR, DEX, CON, INT, WIS, CHA)
+- **Combat statistics** (attack, defense, accuracy, dodge chance, critical stats)
+- **Equipment details** with descriptions for weapon, armor, and accessories
+- **Character progression** showing level, XP, and skill/attribute points
+- **Skills breakdown** organized by category (combat, magic, utility)
+- **Status effects** display with duration information
+- **Professional layout** with clear sections and proper spacing
+
+### 2. Inventory Screen ✅
+
+**Location**: `internal/ui/inventory_screen.go`
+
+- **Full-screen inventory interface** accessible with 'i' key
+- **Scrollable item list** with letter-based selection (a, b, c, etc.)
+- **Detailed item information** including type, value, and descriptions
+- **Interactive item management** with use/equip/drop actions
+- **Capacity tracking** showing current vs maximum inventory space
+- **Smart text wrapping** for long item descriptions
+- **Intuitive navigation** with arrow keys and vim-style controls
+
+### 3. Expanded Message Log ✅
+
+**Location**: `internal/ui/full_message_screen.go`
+
+- **Full-screen message history** accessible with 'V' key
+- **Extended message storage** (200+ messages vs previous 100)
+- **Timestamp display** for each message with [HH:MM:SS] format
+- **Advanced scrolling** with Page Up/Down, j/k, Home/End support
+- **Scroll indicators** showing position and remaining messages
+- **Message wrapping** with proper indentation for continuation lines
+- **Color preservation** maintaining original message colors
+
+### 4. Enhanced Stats Panel ✅
+
+**Location**: `internal/ui/stats_display.go`, `internal/config/constants.go`
+
+- **Increased panel size** from 20×8 to 20×12 for better visibility
+- **Improved spacing** between elements for cleaner appearance
+- **Better information density** without overcrowding
+- **Adjusted screen layout** to accommodate larger stats panel
+
+### 5. Message Log System ✅
 
 **Location**: `internal/ui/message_display.go`
 
@@ -21,8 +67,9 @@ The UI has been completely redesigned to provide a classic roguelike experience 
 
 **Controls**:
 - `Page Up`: Scroll messages up (older messages)
-- `Page Down`: Scroll messages down (newer messages)  
+- `Page Down`: Scroll messages down (newer messages)
 - `M`: Jump to latest messages
+- `V`: Open full-screen message log
 
 ### 2. Player Stats Display ✅
 
@@ -53,9 +100,9 @@ The UI has been completely redesigned to provide a classic roguelike experience 
 
 **Location**: `internal/config/constants.go`, `internal/ui/camera.go`
 
-- **Map viewport**: 60×20 (left side, main game area)
-- **Stats panel**: 20×8 (top-right corner)
-- **Message log**: 80×4 (bottom, full width)
+- **Map viewport**: 60×16 (left side, main game area)
+- **Stats panel**: 20×12 (top-right corner, enlarged)
+- **Message log**: 80×8 (bottom, full width, enlarged)
 - **Camera system** for smooth map scrolling when player moves
 - **Proper screen real estate allocation** maintaining 80×24 total grid
 
@@ -63,15 +110,23 @@ The UI has been completely redesigned to provide a classic roguelike experience 
 ```
 ┌─────────────────────────────────────────────────────────┬──────────────────┐
 │                                                         │                  │
-│                    Game Map (60×20)                     │  Stats Panel     │
-│                                                         │    (20×8)        │
+│                    Game Map (60×16)                     │  Stats Panel     │
+│                                                         │   (20×12)        │
+│                                                         │                  │
+│                                                         │                  │
+│                                                         │                  │
 │                                                         │                  │
 │                                                         │                  │
 │                                                         │                  │
 │                                                         │                  │
 │                                                         │                  │
 ├─────────────────────────────────────────────────────────┴──────────────────┤
-│                        Message Log (80×4)                                   │
+│                        Message Log (80×8)                                   │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
 │                                                                              │
 │                                                                              │
 └──────────────────────────────────────────────────────────────────────────────┘
@@ -104,18 +159,22 @@ The UI has been completely redesigned to provide a classic roguelike experience 
 ```
 internal/
 ├── ui/
-│   ├── camera.go           # Camera/viewport system
-│   ├── panels.go           # Base panel rendering
-│   ├── message_display.go  # Message log panel
-│   ├── stats_display.go    # Player stats panel
-│   └── color.go           # UI color definitions
+│   ├── camera.go              # Camera/viewport system
+│   ├── panels.go              # Base panel rendering
+│   ├── message_display.go     # Message log panel
+│   ├── stats_display.go       # Player stats panel
+│   ├── character_screen.go    # Full-screen character sheet
+│   ├── inventory_screen.go    # Full-screen inventory
+│   ├── full_message_screen.go # Full-screen message log
+│   └── color.go              # UI color definitions
 ├── config/
-│   └── constants.go       # UI layout constants
+│   └── constants.go          # UI layout constants
 └── game/
-    ├── rendering.go       # Updated rendering system
-    ├── model.go          # UI state management
-    ├── input.go          # Message scrolling controls
-    └── player.go         # UI action handlers
+    ├── rendering.go          # Updated rendering system
+    ├── model.go             # UI state management
+    ├── model_update.go      # Input handling for all modes
+    ├── input.go             # Key mappings
+    └── player.go            # UI action handlers
 ```
 
 ### Key Design Decisions
@@ -148,16 +207,23 @@ go build -tags sdl ./cmd/roguelike
 ### Controls
 
 **Movement**: Arrow keys, WASD, or vi keys (hjkl)
-**Game Actions**: 
+
+**Game Actions**:
 - `g` - Pick up items
-- `i` - Open inventory
-- `C` - Character sheet
+- `i` - Open inventory screen
+- `C` - Open character screen
+- `V` - Open full message log
 - `?` - Help
 
 **UI Controls**:
 - `Page Up` - Scroll messages up
 - `Page Down` - Scroll messages down
 - `M` - Jump to latest messages
+
+**Screen Controls**:
+- `ESC` or `q` - Close any full-screen UI
+- `↑↓` or `j/k` - Navigate in inventory/message screens
+- `Home/End` - Jump to top/bottom in message log
 
 ## Future Enhancements
 
@@ -175,10 +241,15 @@ Potential areas for expansion:
 
 The implementation has been thoroughly tested with:
 - ✅ Panel creation and layout
-- ✅ Message scrolling functionality  
+- ✅ Message scrolling functionality
 - ✅ Camera viewport calculations
 - ✅ Stats display formatting
 - ✅ Input handling integration
 - ✅ Build system compatibility
+- ✅ Character screen display and navigation
+- ✅ Inventory screen functionality
+- ✅ Full message log with timestamps
+- ✅ Screen mode transitions
+- ✅ Improved stats panel layout
 
 All components integrate seamlessly with the existing gruid-based architecture while maintaining high performance and clean code organization.
