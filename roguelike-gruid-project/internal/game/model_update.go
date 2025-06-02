@@ -8,11 +8,11 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// GameState represents the current state of the game update cycle
-type GameState int
+// UpdateState represents the current state of the game update cycle
+type UpdateState int
 
 const (
-	StateNormal GameState = iota
+	StateNormal UpdateState = iota
 	StateQuit
 	StateGameOver
 )

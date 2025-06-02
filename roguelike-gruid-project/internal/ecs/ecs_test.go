@@ -9,14 +9,41 @@ import (
 
 func TestECS_AddEntity(t *testing.T) {
 	ecs := NewECS()
-	
+
 	id := ecs.AddEntity()
 	if id == 0 {
 		t.Error("Expected non-zero entity ID")
 	}
-	
+
 	if !ecs.EntityExists(id) {
 		t.Error("Entity should exist after creation")
+	}
+}
+
+func TestECS_AddEntityWithID(t *testing.T) {
+	ecs := NewECS()
+
+	// Test adding entity with specific ID
+	specificID := EntityID(100)
+	err := ecs.AddEntityWithID(specificID)
+	if err != nil {
+		t.Errorf("Expected no error, got %v", err)
+	}
+
+	if !ecs.EntityExists(specificID) {
+		t.Error("Entity should exist after creation with specific ID")
+	}
+
+	// Test that nextEntityID is updated correctly
+	nextID := ecs.AddEntity()
+	if nextID <= specificID {
+		t.Errorf("Next entity ID should be greater than %d, got %d", specificID, nextID)
+	}
+
+	// Test adding duplicate ID should fail
+	err = ecs.AddEntityWithID(specificID)
+	if err == nil {
+		t.Error("Expected error when adding duplicate entity ID")
 	}
 }
 

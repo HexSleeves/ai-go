@@ -9,61 +9,11 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// AIBehavior represents different AI behavior types
-type AIBehavior int
-
-const (
-	AIBehaviorPassive AIBehavior = iota // Doesn't move unless attacked
-	AIBehaviorWander                    // Random movement
-	AIBehaviorGuard                     // Patrols a specific area
-	AIBehaviorHunter                    // Actively seeks player
-	AIBehaviorFleeing                   // Runs away from player
-	AIBehaviorPack                      // Coordinates with nearby allies
-)
-
-// AIState represents the current state of an AI entity
-type AIState int
-
-const (
-	AIStateIdle AIState = iota
-	AIStatePatrolling
-	AIStateChasing
-	AIStateFleeing
-	AIStateAttacking
-	AIStateSearching // Lost sight of player, searching last known position
-)
-
-// AIComponent extends the basic AITag with more sophisticated behavior
-type AIComponent struct {
-	Behavior           AIBehavior
-	State              AIState
-	LastKnownPlayerPos gruid.Point
-	HomePosition       gruid.Point
-	PatrolRadius       int
-	AggroRange         int
-	FleeThreshold      float64 // Health percentage to start fleeing
-	SearchTurns        int     // Turns spent searching for player
-	MaxSearchTurns     int
-}
-
-// NewAIComponent creates a new AI component with default values
-func NewAIComponent(behavior AIBehavior, homePos gruid.Point) AIComponent {
-	return AIComponent{
-		Behavior:       behavior,
-		State:          AIStateIdle,
-		HomePosition:   homePos,
-		PatrolRadius:   5,
-		AggroRange:     8,
-		FleeThreshold:  0.3,
-		MaxSearchTurns: 10,
-	}
-}
-
 // AdvancedMonsterAI handles more sophisticated monster AI
 func (g *Game) AdvancedMonsterAI(entityID ecs.EntityID) GameAction {
-	// Get AI component (we'll need to add this to the ECS)
-	aiComp := g.getAIComponent(entityID)
-	if aiComp == nil {
+	// Get AI component by value
+	aiComp, hasAI := g.getAIComponent(entityID)
+	if !hasAI {
 		// Fallback to basic AI
 		return g.basicMonsterAI(entityID)
 	}
@@ -75,77 +25,87 @@ func (g *Game) AdvancedMonsterAI(entityID ecs.EntityID) GameAction {
 	distanceToPlayer := manhattanDistance(pos, playerPos)
 
 	// Update AI state based on conditions
-	g.updateAIState(entityID, aiComp, health, hasHealth, distanceToPlayer)
+	g.updateAIState(entityID, &aiComp, health, hasHealth, distanceToPlayer)
 
 	// Execute behavior based on current state
+	var action GameAction
 	switch aiComp.State {
-	case AIStateChasing:
-		return g.chasePlayer(entityID, pos, playerPos)
-	case AIStateFleeing:
-		return g.fleeFromPlayer(entityID, pos, playerPos)
-	case AIStateSearching:
-		return g.searchForPlayer(entityID, aiComp, pos)
-	case AIStatePatrolling:
-		return g.patrolArea(entityID, aiComp, pos)
-	case AIStateAttacking:
-		return g.attackNearbyTarget(entityID, pos)
+	case components.AIStateChasing:
+		action = g.chasePlayer(entityID, pos, playerPos)
+	case components.AIStateFleeing:
+		action = g.fleeFromPlayer(entityID, pos, playerPos)
+	case components.AIStateSearching:
+		action = g.searchForPlayer(entityID, &aiComp, pos)
+	case components.AIStatePatrolling:
+		action = g.patrolArea(entityID, &aiComp, pos)
+	case components.AIStateAttacking:
+		action = g.attackNearbyTarget(entityID, pos)
 	default: // AIStateIdle
-		return g.idleBehavior(entityID, aiComp, pos)
+		action = g.idleBehavior(entityID, &aiComp, pos)
 	}
+
+	// Save the updated AI component back to ECS
+	g.ecs.AddComponent(entityID, components.CAIComponent, aiComp)
+
+	return action
 }
 
 // updateAIState updates the AI state based on current conditions
-func (g *Game) updateAIState(entityID ecs.EntityID, aiComp *AIComponent, health components.Health, hasHealth bool, distanceToPlayer int) {
+func (g *Game) updateAIState(entityID ecs.EntityID, aiComp *components.AIComponent, health components.Health, hasHealth bool, distanceToPlayer int) {
 	playerPos := g.GetPlayerPosition()
 	canSeePlayer := g.canSeePlayer(entityID, playerPos)
 
 	// Check if should flee
 	if hasHealth && aiComp.FleeThreshold > 0 {
+		if health.MaxHP == 0 { // corrupt component – bail out
+			return
+		}
+
 		healthPercent := float64(health.CurrentHP) / float64(health.MaxHP)
 		if healthPercent <= aiComp.FleeThreshold && canSeePlayer {
-			aiComp.State = AIStateFleeing
+			aiComp.State = components.AIStateFleeing
 			return
 		}
 	}
 
-	// Check if can see player and should chase
+	// If adjacent, always attack first
+	if distanceToPlayer == 1 {
+		aiComp.State = components.AIStateAttacking
+		return
+	}
+
+	// Otherwise, chase when in aggro range and player is visible
 	if canSeePlayer && distanceToPlayer <= aiComp.AggroRange {
-		aiComp.State = AIStateChasing
+		aiComp.State = components.AIStateChasing
 		aiComp.LastKnownPlayerPos = playerPos
 		aiComp.SearchTurns = 0
 		return
 	}
 
-	// Check if adjacent to player (attack)
-	if distanceToPlayer == 1 {
-		aiComp.State = AIStateAttacking
-		return
-	}
-
 	// If was chasing but lost sight, start searching
-	if aiComp.State == AIStateChasing && !canSeePlayer {
-		aiComp.State = AIStateSearching
+	if aiComp.State == components.AIStateChasing && !canSeePlayer {
+		aiComp.State = components.AIStateSearching
 		aiComp.SearchTurns = 0
 		return
 	}
 
 	// Continue searching if not exceeded max turns
-	if aiComp.State == AIStateSearching {
+	if aiComp.State == components.AIStateSearching {
 		aiComp.SearchTurns++
 		if aiComp.SearchTurns >= aiComp.MaxSearchTurns {
-			aiComp.State = AIStateIdle
+			aiComp.State = components.AIStateIdle
 		}
 		return
 	}
 
 	// Default behavior based on AI type
 	switch aiComp.Behavior {
-	case AIBehaviorGuard:
-		aiComp.State = AIStatePatrolling
-	case AIBehaviorWander:
-		aiComp.State = AIStatePatrolling
+	case components.AIBehaviorGuard:
+		aiComp.State = components.AIStatePatrolling
+	case components.AIBehaviorWander:
+		aiComp.State = components.AIStatePatrolling
 	default:
-		aiComp.State = AIStateIdle
+		aiComp.State = components.AIStateIdle
 	}
 }
 
@@ -162,7 +122,7 @@ func (g *Game) fleeFromPlayer(entityID ecs.EntityID, pos, playerPos gruid.Point)
 }
 
 // searchForPlayer moves towards last known player position
-func (g *Game) searchForPlayer(entityID ecs.EntityID, aiComp *AIComponent, pos gruid.Point) GameAction {
+func (g *Game) searchForPlayer(entityID ecs.EntityID, aiComp *components.AIComponent, pos gruid.Point) GameAction {
 	if pos == aiComp.LastKnownPlayerPos {
 		// Reached last known position, look around randomly
 		directions := []gruid.Point{
@@ -177,7 +137,7 @@ func (g *Game) searchForPlayer(entityID ecs.EntityID, aiComp *AIComponent, pos g
 }
 
 // patrolArea moves around the home position
-func (g *Game) patrolArea(entityID ecs.EntityID, aiComp *AIComponent, pos gruid.Point) GameAction {
+func (g *Game) patrolArea(entityID ecs.EntityID, aiComp *components.AIComponent, pos gruid.Point) GameAction {
 	homeDistance := manhattanDistance(pos, aiComp.HomePosition)
 
 	if homeDistance > aiComp.PatrolRadius {
@@ -217,9 +177,9 @@ func (g *Game) attackNearbyTarget(entityID ecs.EntityID, pos gruid.Point) GameAc
 }
 
 // idleBehavior default idle behavior
-func (g *Game) idleBehavior(entityID ecs.EntityID, aiComp *AIComponent, pos gruid.Point) GameAction {
+func (g *Game) idleBehavior(entityID ecs.EntityID, aiComp *components.AIComponent, pos gruid.Point) GameAction {
 	switch aiComp.Behavior {
-	case AIBehaviorWander:
+	case components.AIBehaviorWander:
 		if rand.Intn(3) == 0 { // 33% chance to move
 			directions := []gruid.Point{
 				{X: -1, Y: 0}, {X: 1, Y: 0}, {X: 0, Y: -1}, {X: 0, Y: 1},
@@ -291,9 +251,68 @@ func (g *Game) basicMonsterAI(entityID ecs.EntityID) GameAction {
 	return action
 }
 
-// getAIComponent retrieves AI component (placeholder - needs ECS integration)
-func (g *Game) getAIComponent(entityID ecs.EntityID) *AIComponent {
-	// This would need to be implemented in the ECS system
-	// For now, return nil to use basic AI
-	return nil
+// getAIComponent retrieves AI component from ECS by value.
+// Callers must explicitly call AddComponent to persist any mutations.
+//
+// IMPORTANT: This function was fixed to prevent state loss. Previously, it returned
+// a pointer to a local copy (*components.AIComponent), which caused mutations to be
+// lost since they weren't persisted back to the ECS.
+//
+// Two solutions were implemented:
+// 1. Return by value (this function) - requires explicit AddComponent calls
+// 2. UpdateAIComponent method - provides safe concurrent access with automatic persistence
+func (g *Game) getAIComponent(entityID ecs.EntityID) (components.AIComponent, bool) {
+	if !g.ecs.HasAIComponentSafe(entityID) {
+		return components.AIComponent{}, false
+	}
+	aiComp := g.ecs.GetAIComponentSafe(entityID)
+	return aiComp, true
+}
+
+// AdvancedMonsterAIWithUpdate demonstrates the alternative approach using UpdateAIComponent
+// for direct mutation with proper concurrency control.
+func (g *Game) AdvancedMonsterAIWithUpdate(entityID ecs.EntityID) GameAction {
+	if !g.ecs.HasAIComponentSafe(entityID) {
+		// Fallback to basic AI
+		return g.basicMonsterAI(entityID)
+	}
+
+	pos := g.ecs.GetPositionSafe(entityID)
+	health := g.ecs.GetHealthSafe(entityID)
+	hasHealth := g.ecs.HasHealthSafe(entityID)
+	playerPos := g.GetPlayerPosition()
+	distanceToPlayer := manhattanDistance(pos, playerPos)
+
+	var action GameAction
+
+	// Update AI component with direct mutation
+	err := g.ecs.UpdateAIComponent(entityID, func(aiComp *components.AIComponent) error {
+		// Update AI state based on conditions
+		g.updateAIState(entityID, aiComp, health, hasHealth, distanceToPlayer)
+
+		// Execute behavior based on current state
+		switch aiComp.State {
+		case components.AIStateChasing:
+			action = g.chasePlayer(entityID, pos, playerPos)
+		case components.AIStateFleeing:
+			action = g.fleeFromPlayer(entityID, pos, playerPos)
+		case components.AIStateSearching:
+			action = g.searchForPlayer(entityID, aiComp, pos)
+		case components.AIStatePatrolling:
+			action = g.patrolArea(entityID, aiComp, pos)
+		case components.AIStateAttacking:
+			action = g.attackNearbyTarget(entityID, pos)
+		default: // AIStateIdle
+			action = g.idleBehavior(entityID, aiComp, pos)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		logrus.Errorf("Failed to update AI component for entity %d: %v", entityID, err)
+		return g.basicMonsterAI(entityID)
+	}
+
+	return action
 }

@@ -192,6 +192,61 @@ func (ecs *ECS) GetTurnActor(id EntityID) (components.TurnActor, bool) {
 	return GetComponentTyped[components.TurnActor](ecs, id, components.CTurnActor)
 }
 
+// GetInventory returns the Inventory component for an entity.
+func (ecs *ECS) GetInventory(id EntityID) (components.Inventory, bool) {
+	return GetComponentTyped[components.Inventory](ecs, id, components.CInventory)
+}
+
+// GetEquipment returns the Equipment component for an entity.
+func (ecs *ECS) GetEquipment(id EntityID) (components.Equipment, bool) {
+	return GetComponentTyped[components.Equipment](ecs, id, components.CEquipment)
+}
+
+// GetItemPickup returns the ItemPickup component for an entity.
+func (ecs *ECS) GetItemPickup(id EntityID) (components.ItemPickup, bool) {
+	return GetComponentTyped[components.ItemPickup](ecs, id, components.CItemPickup)
+}
+
+// GetAIComponent returns the AIComponent for an entity.
+func (ecs *ECS) GetAIComponent(id EntityID) (components.AIComponent, bool) {
+	return GetComponentTyped[components.AIComponent](ecs, id, components.CAIComponent)
+}
+
+// GetStats returns the Stats component for an entity.
+func (ecs *ECS) GetStats(id EntityID) (components.Stats, bool) {
+	return GetComponentTyped[components.Stats](ecs, id, components.CStats)
+}
+
+// GetExperience returns the Experience component for an entity.
+func (ecs *ECS) GetExperience(id EntityID) (components.Experience, bool) {
+	return GetComponentTyped[components.Experience](ecs, id, components.CExperience)
+}
+
+// GetSkills returns the Skills component for an entity.
+func (ecs *ECS) GetSkills(id EntityID) (components.Skills, bool) {
+	return GetComponentTyped[components.Skills](ecs, id, components.CSkills)
+}
+
+// GetCombat returns the Combat component for an entity.
+func (ecs *ECS) GetCombat(id EntityID) (components.Combat, bool) {
+	return GetComponentTyped[components.Combat](ecs, id, components.CCombat)
+}
+
+// GetMana returns the Mana component for an entity.
+func (ecs *ECS) GetMana(id EntityID) (components.Mana, bool) {
+	return GetComponentTyped[components.Mana](ecs, id, components.CMana)
+}
+
+// GetStamina returns the Stamina component for an entity.
+func (ecs *ECS) GetStamina(id EntityID) (components.Stamina, bool) {
+	return GetComponentTyped[components.Stamina](ecs, id, components.CStamina)
+}
+
+// GetStatusEffects returns the StatusEffects component for an entity.
+func (ecs *ECS) GetStatusEffects(id EntityID) (components.StatusEffects, bool) {
+	return GetComponentTyped[components.StatusEffects](ecs, id, components.CStatusEffects)
+}
+
 // GetPlayerTag returns the PlayerTag component for an entity.
 func (ecs *ECS) GetPlayerTag(id EntityID) (components.PlayerTag, bool) {
 	return GetComponentTyped[components.PlayerTag](ecs, id, components.CPlayerTag)

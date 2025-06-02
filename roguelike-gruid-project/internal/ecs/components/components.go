@@ -11,28 +11,50 @@ type ComponentType string
 
 // Component type constants
 const (
+	CAIComponent    ComponentType = "AIComponent"
 	CAITag          ComponentType = "AITag"
 	CBlocksMovement ComponentType = "BlocksMovement"
 	CCorpseTag      ComponentType = "CorpseTag"
+	CEquipment      ComponentType = "Equipment"
 	CFOV            ComponentType = "FOV"
 	CHealth         ComponentType = "Health"
+	CInventory      ComponentType = "Inventory"
+	CItemPickup     ComponentType = "ItemPickup"
 	CName           ComponentType = "Name"
 	CPlayerTag      ComponentType = "PlayerTag"
 	CPosition       ComponentType = "Position"
 	CRenderable     ComponentType = "Renderable"
+	CStats          ComponentType = "Stats"
+	CExperience     ComponentType = "Experience"
+	CSkills         ComponentType = "Skills"
+	CCombat         ComponentType = "Combat"
+	CMana           ComponentType = "Mana"
+	CStamina        ComponentType = "Stamina"
+	CStatusEffects  ComponentType = "StatusEffects"
 	CTurnActor      ComponentType = "TurnActor"
 )
 
 var TypeToComponent = map[ComponentType]reflect.Type{
+	CAIComponent:    reflect.TypeOf(AIComponent{}),
 	CAITag:          reflect.TypeOf(AITag{}),
 	CBlocksMovement: reflect.TypeOf(BlocksMovement{}),
 	CCorpseTag:      reflect.TypeOf(CorpseTag{}),
+	CEquipment:      reflect.TypeOf(Equipment{}),
 	CFOV:            reflect.TypeOf((*FOV)(nil)),
 	CHealth:         reflect.TypeOf(Health{}),
+	CInventory:      reflect.TypeOf(Inventory{}),
+	CItemPickup:     reflect.TypeOf(ItemPickup{}),
 	CName:           reflect.TypeOf(""),
 	CPlayerTag:      reflect.TypeOf(PlayerTag{}),
 	CPosition:       reflect.TypeOf(gruid.Point{}),
 	CRenderable:     reflect.TypeOf(Renderable{}),
+	CStats:          reflect.TypeOf(Stats{}),
+	CExperience:     reflect.TypeOf(Experience{}),
+	CSkills:         reflect.TypeOf(Skills{}),
+	CCombat:         reflect.TypeOf(Combat{}),
+	CMana:           reflect.TypeOf(Mana{}),
+	CStamina:        reflect.TypeOf(Stamina{}),
+	CStatusEffects:  reflect.TypeOf(StatusEffects{}),
 	CTurnActor:      reflect.TypeOf(TurnActor{}),
 }
 

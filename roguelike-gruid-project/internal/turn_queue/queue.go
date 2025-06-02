@@ -82,6 +82,25 @@ func (tq *TurnQueue) IsEmpty() bool {
 	return tq.queue.Len() == 0
 }
 
+// Snapshot returns a copy of all entries in the turn queue for saving
+func (tq *TurnQueue) Snapshot() []TurnEntry {
+	entries := make([]TurnEntry, len(*tq.queue))
+	copy(entries, *tq.queue)
+	return entries
+}
+
+// RestoreFromSnapshot restores the turn queue from a saved snapshot
+func (tq *TurnQueue) RestoreFromSnapshot(entries []TurnEntry) {
+	// Clear the current queue
+	tq.queue = &turnHeap{}
+	heap.Init(tq.queue)
+
+	// Add all entries back to the queue
+	for _, entry := range entries {
+		heap.Push(tq.queue, entry)
+	}
+}
+
 // PrintQueue prints the current state of the turn queue for debugging purposes.
 func (tq *TurnQueue) PrintQueue() {
 	if tq.IsEmpty() {

@@ -38,35 +38,43 @@ func (g *Game) monstersTurn() {
 			continue
 		}
 
-		// Check if monster can see player
-		playerPos := g.GetPlayerPosition()
-		if monsterFOVComp.IsVisible(playerPos, g.dungeon.Width) {
-			logrus.Infof("Monster %d can see player, attacking", id)
-
-			// Use safe accessor - no error handling needed!
-			pos := g.ecs.GetPositionSafe(id)
-
-			// Skip if entity doesn't have position component
-			if !g.ecs.HasPositionSafe(id) {
-				logrus.Errorf("Monster entity %d missing position in monstersTurn", id)
-				continue
-			}
-
-			actor.AddAction(MoveAction{Direction: playerPos.Sub(pos), EntityID: id})
-			continue
-		}
-
-		moveOrWait := rand.Intn(2)
-		if moveOrWait == 0 {
-			action, err := moveMonster(g, id)
-			if err != nil {
-				logrus.Debugf("Failed to move monster %d: %v", id, err)
-				continue
-			}
-			actor.AddAction(action)
+		// Try to use advanced AI if available, otherwise fall back to basic AI
+		var action GameAction
+		if g.ecs.HasAIComponentSafe(id) {
+			action = g.AdvancedMonsterAI(id)
 		} else {
-			actor.AddAction(WaitAction{EntityID: id})
+			// Fallback to basic AI
+			// Check if monster can see player
+			playerPos := g.GetPlayerPosition()
+			if monsterFOVComp.IsVisible(playerPos, g.dungeon.Width) {
+				logrus.Infof("Monster %d can see player, attacking", id)
+
+				// Use safe accessor - no error handling needed!
+				pos := g.ecs.GetPositionSafe(id)
+
+				// Skip if entity doesn't have position component
+				if !g.ecs.HasPositionSafe(id) {
+					logrus.Errorf("Monster entity %d missing position in monstersTurn", id)
+					continue
+				}
+
+				action = MoveAction{Direction: playerPos.Sub(pos), EntityID: id}
+			} else {
+				moveOrWait := rand.Intn(2)
+				if moveOrWait == 0 {
+					var err error
+					action, err = moveMonster(g, id)
+					if err != nil {
+						logrus.Debugf("Failed to move monster %d: %v", id, err)
+						continue
+					}
+				} else {
+					action = WaitAction{EntityID: id}
+				}
+			}
 		}
+
+		actor.AddAction(action)
 	}
 }
 

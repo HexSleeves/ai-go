@@ -6,6 +6,7 @@ import (
 
 	"codeberg.org/anaseto/gruid"
 	"codeberg.org/anaseto/gruid/rl" // Use rl package which contains FOV
+	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/ecs/components"
 	"github.com/sirupsen/logrus"
 )
 
@@ -46,7 +47,7 @@ func NewMap(width, height int) *Map {
 
 // generateMap creates a new map layout with rooms and tunnels, and spawns monsters.
 // It now takes the game struct to access ECS and TurnQueue.
-func (m *Map) generateMap(g *Game, width, height int) gruid.Point {
+func (m *Map) generateMap(g *Game, width, height int, items map[string]components.Item) gruid.Point {
 	m.Grid.Fill(WallCell)
 
 	var rooms []Rect
@@ -84,6 +85,8 @@ func (m *Map) generateMap(g *Game, width, height int) gruid.Point {
 				}
 				// Spawn monsters in this room (if not the first room)
 				m.placeMonsters(g, newRoom)
+				// Spawn items in this room
+				m.placeItems(g, newRoom, items)
 			}
 			rooms = append(rooms, newRoom)
 		}
@@ -191,6 +194,36 @@ func (m *Map) placeMonsters(g *Game, room Rect) {
 		} else {
 			// If tile is occupied or not walkable, we just skip spawning this monster for simplicity
 			logrus.Debugf("Failed to spawn monster at position %v - not walkable or occupied", pos)
+		}
+	}
+}
+
+// placeItems spawns items in a given room.
+func (m *Map) placeItems(g *Game, room Rect, items map[string]components.Item) {
+	// 30% chance to spawn an item in each room
+	if rand.Intn(100) < 30 {
+		// Find a random walkable tile within the room bounds
+		x := rand.Intn(room.X2-room.X1-1) + room.X1 + 1
+		y := rand.Intn(room.Y2-room.Y1-1) + room.Y1 + 1
+		pos := gruid.Point{X: x, Y: y}
+
+		// Check if the tile is walkable and not already occupied
+		if m.isWalkable(pos) && len(g.ecs.EntitiesAt(pos)) == 0 {
+			// Get available items
+
+			// Randomly select an item to spawn
+			itemNames := []string{"Health Potion", "Iron Sword", "Leather Armor", "Gold Coin"}
+			selectedName := itemNames[rand.Intn(len(itemNames))]
+			selectedItem := items[selectedName]
+
+			// Determine quantity
+			quantity := 1
+			if selectedItem.Stackable {
+				quantity = rand.Intn(3) + 1 // 1-3 for stackable items
+			}
+
+			g.SpawnItem(selectedItem, quantity, pos)
+			logrus.Debugf("Spawned %s (x%d) at %v", selectedItem.Name, quantity, pos)
 		}
 	}
 }
