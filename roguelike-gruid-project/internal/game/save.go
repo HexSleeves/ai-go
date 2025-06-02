@@ -17,15 +17,15 @@ import (
 
 // SaveData represents the complete game state for serialization
 type SaveData struct {
-	Version     string                 `json:"version"`
-	Timestamp   time.Time              `json:"timestamp"`
-	PlayerID    ecs.EntityID           `json:"player_id"`
-	Depth       int                    `json:"depth"`
-	Entities    []SavedEntity          `json:"entities"`
-	Map         SavedMap               `json:"map"`
-	TurnQueue   SavedTurnQueue         `json:"turn_queue"`
-	Messages    []SavedMessage         `json:"messages"`
-	GameStats   SavedGameStats         `json:"game_stats"`
+	Version   string         `json:"version"`
+	Timestamp time.Time      `json:"timestamp"`
+	PlayerID  ecs.EntityID   `json:"player_id"`
+	Depth     int            `json:"depth"`
+	Entities  []SavedEntity  `json:"entities"`
+	Map       SavedMap       `json:"map"`
+	TurnQueue SavedTurnQueue `json:"turn_queue"`
+	Messages  []SavedMessage `json:"messages"`
+	GameStats SavedGameStats `json:"game_stats"`
 }
 
 // SavedEntity represents an entity and its components
@@ -36,10 +36,10 @@ type SavedEntity struct {
 
 // SavedMap represents the map state
 type SavedMap struct {
-	Width    int       `json:"width"`
-	Height   int       `json:"height"`
-	Cells    [][]int   `json:"cells"`    // Grid data
-	Explored []uint64  `json:"explored"` // Explored bitset
+	Width    int      `json:"width"`
+	Height   int      `json:"height"`
+	Cells    [][]int  `json:"cells"`    // Grid data
+	Explored []uint64 `json:"explored"` // Explored bitset
 }
 
 // SavedTurnQueue represents the turn queue state
@@ -56,18 +56,18 @@ type SavedTurnQueueEntry struct {
 
 // SavedMessage represents a log message
 type SavedMessage struct {
-	Text      string      `json:"text"`
-	Color     uint32      `json:"color"` // Color as uint32
-	Timestamp time.Time   `json:"timestamp"`
+	Text      string    `json:"text"`
+	Color     uint32    `json:"color"` // Color as uint32
+	Timestamp time.Time `json:"timestamp"`
 }
 
 // SavedGameStats represents game statistics
 type SavedGameStats struct {
-	PlayTime      time.Duration `json:"play_time"`
-	MonstersKilled int          `json:"monsters_killed"`
-	ItemsCollected int          `json:"items_collected"`
-	DamageDealt   int           `json:"damage_dealt"`
-	DamageTaken   int           `json:"damage_taken"`
+	PlayTime       time.Duration `json:"play_time"`
+	MonstersKilled int           `json:"monsters_killed"`
+	ItemsCollected int           `json:"items_collected"`
+	DamageDealt    int           `json:"damage_dealt"`
+	DamageTaken    int           `json:"damage_taken"`
 }
 
 const (
@@ -216,7 +216,7 @@ func (g *Game) SaveGame() error {
 // LoadGame loads a saved game state from disk
 func (g *Game) LoadGame() error {
 	savePath := filepath.Join(SaveDir, SaveFile)
-	
+
 	// Check if save file exists
 	if _, err := os.Stat(savePath); os.IsNotExist(err) {
 		return fmt.Errorf("no save file found at %s", savePath)
@@ -236,7 +236,7 @@ func (g *Game) LoadGame() error {
 
 	// Version check
 	if saveData.Version != SaveVersion {
-		logrus.Warnf("Save file version %s differs from current version %s", 
+		logrus.Warnf("Save file version %s differs from current version %s",
 			saveData.Version, SaveVersion)
 	}
 
@@ -300,6 +300,30 @@ func (g *Game) LoadGame() error {
 				g.ecs.AddComponent(entityID, components.CBlocksMovement, components.BlocksMovement{})
 			case "corpse_tag":
 				g.ecs.AddComponent(entityID, components.CCorpseTag, components.CorpseTag{})
+
+			case "renderable":
+				if renderData, ok := compData.(map[string]interface{}); ok {
+					renderable := components.Renderable{
+						Glyph: rune(renderData["Glyph"].(float64)),
+						Color: gruid.Color(renderData["Color"].(float64)),
+					}
+					g.ecs.AddComponent(entityID, components.CRenderable, renderable)
+				}
+
+			case "name":
+				if nameStr, ok := compData.(string); ok {
+					g.ecs.AddComponent(entityID, components.CName, nameStr)
+				}
+
+			case "turn_actor":
+				if actorData, ok := compData.(map[string]interface{}); ok {
+					actor := components.TurnActor{
+						Speed:        uint64(actorData["Speed"].(float64)),
+						Alive:        actorData["Alive"].(bool),
+						NextTurnTime: uint64(actorData["NextTurnTime"].(float64)),
+					}
+					g.ecs.AddComponent(entityID, components.CTurnActor, actor)
+				}
 
 			// New components
 			case "inventory":

@@ -9,13 +9,11 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-
-
 // AdvancedMonsterAI handles more sophisticated monster AI
 func (g *Game) AdvancedMonsterAI(entityID ecs.EntityID) GameAction {
-	// Get AI component (we'll need to add this to the ECS)
-	aiComp := g.getAIComponent(entityID)
-	if aiComp == nil {
+	// Get AI component by value
+	aiComp, hasAI := g.getAIComponent(entityID)
+	if !hasAI {
 		// Fallback to basic AI
 		return g.basicMonsterAI(entityID)
 	}
@@ -27,26 +25,29 @@ func (g *Game) AdvancedMonsterAI(entityID ecs.EntityID) GameAction {
 	distanceToPlayer := manhattanDistance(pos, playerPos)
 
 	// Update AI state based on conditions
-	g.updateAIState(entityID, aiComp, health, hasHealth, distanceToPlayer)
-
-	// Save the updated AI component back to ECS
-	g.ecs.AddComponent(entityID, components.CAIComponent, *aiComp)
+	g.updateAIState(entityID, &aiComp, health, hasHealth, distanceToPlayer)
 
 	// Execute behavior based on current state
+	var action GameAction
 	switch aiComp.State {
 	case components.AIStateChasing:
-		return g.chasePlayer(entityID, pos, playerPos)
+		action = g.chasePlayer(entityID, pos, playerPos)
 	case components.AIStateFleeing:
-		return g.fleeFromPlayer(entityID, pos, playerPos)
+		action = g.fleeFromPlayer(entityID, pos, playerPos)
 	case components.AIStateSearching:
-		return g.searchForPlayer(entityID, aiComp, pos)
+		action = g.searchForPlayer(entityID, &aiComp, pos)
 	case components.AIStatePatrolling:
-		return g.patrolArea(entityID, aiComp, pos)
+		action = g.patrolArea(entityID, &aiComp, pos)
 	case components.AIStateAttacking:
-		return g.attackNearbyTarget(entityID, pos)
+		action = g.attackNearbyTarget(entityID, pos)
 	default: // AIStateIdle
-		return g.idleBehavior(entityID, aiComp, pos)
+		action = g.idleBehavior(entityID, &aiComp, pos)
 	}
+
+	// Save the updated AI component back to ECS
+	g.ecs.AddComponent(entityID, components.CAIComponent, aiComp)
+
+	return action
 }
 
 // updateAIState updates the AI state based on current conditions
@@ -246,11 +247,68 @@ func (g *Game) basicMonsterAI(entityID ecs.EntityID) GameAction {
 	return action
 }
 
-// getAIComponent retrieves AI component from ECS
-func (g *Game) getAIComponent(entityID ecs.EntityID) *components.AIComponent {
+// getAIComponent retrieves AI component from ECS by value.
+// Callers must explicitly call AddComponent to persist any mutations.
+//
+// IMPORTANT: This function was fixed to prevent state loss. Previously, it returned
+// a pointer to a local copy (*components.AIComponent), which caused mutations to be
+// lost since they weren't persisted back to the ECS.
+//
+// Two solutions were implemented:
+// 1. Return by value (this function) - requires explicit AddComponent calls
+// 2. UpdateAIComponent method - provides safe concurrent access with automatic persistence
+func (g *Game) getAIComponent(entityID ecs.EntityID) (components.AIComponent, bool) {
 	if !g.ecs.HasAIComponentSafe(entityID) {
-		return nil
+		return components.AIComponent{}, false
 	}
 	aiComp := g.ecs.GetAIComponentSafe(entityID)
-	return &aiComp
+	return aiComp, true
+}
+
+// AdvancedMonsterAIWithUpdate demonstrates the alternative approach using UpdateAIComponent
+// for direct mutation with proper concurrency control.
+func (g *Game) AdvancedMonsterAIWithUpdate(entityID ecs.EntityID) GameAction {
+	if !g.ecs.HasAIComponentSafe(entityID) {
+		// Fallback to basic AI
+		return g.basicMonsterAI(entityID)
+	}
+
+	pos := g.ecs.GetPositionSafe(entityID)
+	health := g.ecs.GetHealthSafe(entityID)
+	hasHealth := g.ecs.HasHealthSafe(entityID)
+	playerPos := g.GetPlayerPosition()
+	distanceToPlayer := manhattanDistance(pos, playerPos)
+
+	var action GameAction
+
+	// Update AI component with direct mutation
+	err := g.ecs.UpdateAIComponent(entityID, func(aiComp *components.AIComponent) error {
+		// Update AI state based on conditions
+		g.updateAIState(entityID, aiComp, health, hasHealth, distanceToPlayer)
+
+		// Execute behavior based on current state
+		switch aiComp.State {
+		case components.AIStateChasing:
+			action = g.chasePlayer(entityID, pos, playerPos)
+		case components.AIStateFleeing:
+			action = g.fleeFromPlayer(entityID, pos, playerPos)
+		case components.AIStateSearching:
+			action = g.searchForPlayer(entityID, aiComp, pos)
+		case components.AIStatePatrolling:
+			action = g.patrolArea(entityID, aiComp, pos)
+		case components.AIStateAttacking:
+			action = g.attackNearbyTarget(entityID, pos)
+		default: // AIStateIdle
+			action = g.idleBehavior(entityID, aiComp, pos)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		logrus.Errorf("Failed to update AI component for entity %d: %v", entityID, err)
+		return g.basicMonsterAI(entityID)
+	}
+
+	return action
 }

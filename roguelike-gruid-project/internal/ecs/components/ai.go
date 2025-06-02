@@ -79,7 +79,7 @@ func (ai *AIComponent) IsSearching() bool {
 
 // ShouldFlee checks if the AI should flee based on health
 func (ai *AIComponent) ShouldFlee(currentHP, maxHP int) bool {
-	if ai.FleeThreshold <= 0 {
+	if ai.FleeThreshold <= 0 || maxHP <= 0 {
 		return false
 	}
 	healthPercent := float64(currentHP) / float64(maxHP)

@@ -10,7 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func (g *Game) SpawnPlayer(playerStart gruid.Point) {
+func (g *Game) SpawnPlayer(playerStart gruid.Point, items map[string]components.Item) {
 	logrus.Debugf("Spawning player at %v", playerStart)
 	playerID := g.ecs.AddEntity()
 	g.PlayerID = playerID // Store the player ID in the game struct
@@ -24,14 +24,14 @@ func (g *Game) SpawnPlayer(playerStart gruid.Point) {
 		components.NewHealth(10),
 		components.NewTurnActor(100),
 		components.NewFOVComponent(4, g.dungeon.Width, g.dungeon.Height),
-		components.NewInventory(20), // 20 slot inventory
-		components.NewEquipment(),   // Empty equipment slots
-		components.NewStats(),       // Starting stats
-		components.NewExperience(),  // Level 1, 0 XP
-		components.NewSkills(),      // Basic skills
-		components.NewCombat(),      // Basic combat stats
-		components.NewMana(5),       // 5 mana points
-		components.NewStamina(10),   // 10 stamina points
+		components.NewInventory(20),   // 20 slot inventory
+		components.NewEquipment(),     // Empty equipment slots
+		components.NewStats(),         // Starting stats
+		components.NewExperience(),    // Level 1, 0 XP
+		components.NewSkills(),        // Basic skills
+		components.NewCombat(),        // Basic combat stats
+		components.NewMana(5),         // 5 mana points
+		components.NewStamina(10),     // 10 stamina points
 		components.NewStatusEffects(), // No initial effects
 	)
 
@@ -41,7 +41,7 @@ func (g *Game) SpawnPlayer(playerStart gruid.Point) {
 	g.spatialGrid.Add(playerID, playerStart)
 
 	// Give player starting items
-	g.giveStartingItems(playerID)
+	g.giveStartingItems(playerID, items)
 
 	// Show welcome message
 	g.showWelcomeMessage()
@@ -67,13 +67,12 @@ func (g *Game) SpawnItem(item components.Item, quantity int, pos gruid.Point) ec
 }
 
 // giveStartingItems gives the player some starting equipment and items
-func (g *Game) giveStartingItems(playerID ecs.EntityID) {
+func (g *Game) giveStartingItems(playerID ecs.EntityID, items map[string]components.Item) {
 	if !g.ecs.HasInventorySafe(playerID) {
 		return
 	}
 
 	inventory := g.ecs.GetInventorySafe(playerID)
-	items := CreateBasicItems()
 
 	// Give starting items
 	startingItems := []struct {

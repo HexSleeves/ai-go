@@ -35,19 +35,26 @@ func (a PickupAction) Execute(g *Game) error {
 	if inventory.AddItem(pickup.Item, pickup.Quantity) {
 		// Update inventory component
 		g.ecs.AddComponent(a.EntityID, components.CInventory, inventory)
-		
-		// Remove item from world
-		g.ecs.RemoveEntity(a.ItemID)
-		
-		// Remove from spatial grid
+
+		// // Remove item from world
+		// g.ecs.RemoveEntity(a.ItemID)
+
+		// // Remove from spatial grid
+		// itemPos := g.ecs.GetPositionSafe(a.ItemID)
+		// g.spatialGrid.Remove(a.ItemID, itemPos)
+
+		// Grab position before we delete the entity
 		itemPos := g.ecs.GetPositionSafe(a.ItemID)
+
+		// Remove from world & grid
+		g.ecs.RemoveEntity(a.ItemID)
 		g.spatialGrid.Remove(a.ItemID, itemPos)
-		
+
 		// Log message
 		if a.EntityID == g.PlayerID {
 			g.log.AddMessagef(ui.ColorStatusGood, "You pick up %s.", pickup.Item.Name)
 		}
-		
+
 		logrus.Debugf("%s picked up %s (quantity: %d)", entityName, pickup.Item.Name, pickup.Quantity)
 		return nil
 	}
@@ -108,26 +115,26 @@ func (a DropAction) Execute(g *Game) error {
 	if inventory.RemoveItem(a.ItemName, a.Quantity) {
 		// Update inventory component
 		g.ecs.AddComponent(a.EntityID, components.CInventory, inventory)
-		
+
 		// Create item pickup entity
 		itemEntity := g.ecs.AddEntity()
 		pickup := components.NewItemPickup(itemToDrop, a.Quantity)
-		
+
 		g.ecs.AddComponents(itemEntity,
 			entityPos,
 			pickup,
 			components.Renderable{Glyph: itemToDrop.Glyph, Color: itemToDrop.Color},
 			components.Name{Name: itemToDrop.Name},
 		)
-		
+
 		// Add to spatial grid
 		g.spatialGrid.Add(itemEntity, entityPos)
-		
+
 		// Log message
 		if a.EntityID == g.PlayerID {
 			g.log.AddMessagef(ui.ColorStatusGood, "You drop %s.", a.ItemName)
 		}
-		
+
 		logrus.Debugf("%s dropped %s (quantity: %d)", entityName, a.ItemName, a.Quantity)
 		return nil
 	}
@@ -196,7 +203,7 @@ func (a UseItemAction) Execute(g *Game) error {
 				health.CurrentHP = health.MaxHP
 			}
 			g.ecs.AddComponent(a.EntityID, components.CHealth, health)
-			
+
 			if a.EntityID == g.PlayerID {
 				g.log.AddMessagef(ui.ColorStatusGood, "You feel better! (+%d HP)", healAmount)
 			}
@@ -206,11 +213,11 @@ func (a UseItemAction) Execute(g *Game) error {
 	// Remove item from inventory
 	if inventory.RemoveItem(a.ItemName, 1) {
 		g.ecs.AddComponent(a.EntityID, components.CInventory, inventory)
-		
+
 		if a.EntityID == g.PlayerID {
 			g.log.AddMessagef(ui.ColorStatusGood, "You use %s.", a.ItemName)
 		}
-		
+
 		logrus.Debugf("%s used %s", entityName, a.ItemName)
 		return nil
 	}
@@ -267,7 +274,7 @@ func (a EquipAction) Execute(g *Game) error {
 
 	// Try to equip item
 	oldItem := equipment.EquipItem(itemToEquip)
-	
+
 	// Remove item from inventory
 	if !inventory.RemoveItem(a.ItemName, 1) {
 		return fmt.Errorf("failed to remove item from inventory")
@@ -282,18 +289,24 @@ func (a EquipAction) Execute(g *Game) error {
 				ItemName: oldItem.Name,
 				Quantity: 1,
 			}
+
 			// Add old item back to equipment temporarily
-			equipment.EquipItem(*oldItem)
-			g.ecs.AddComponent(a.EntityID, components.CEquipment, equipment)
-			
-			// Execute drop action
+			// equipment.EquipItem(*oldItem)
+			// g.ecs.AddComponent(a.EntityID, components.CEquipment, equipment)
+
+			// // Execute drop action
+			// if err := dropAction.Execute(g); err != nil {
+			// 	return fmt.Errorf("failed to drop old item: %w", err)
+			// }
+
+			// // Re-equip new item
+			// equipment = g.ecs.GetEquipmentSafe(a.EntityID)
+			// equipment.EquipItem(itemToEquip)
+
+			// Inventory is full – just drop the old item directly
 			if err := dropAction.Execute(g); err != nil {
 				return fmt.Errorf("failed to drop old item: %w", err)
 			}
-			
-			// Re-equip new item
-			equipment = g.ecs.GetEquipmentSafe(a.EntityID)
-			equipment.EquipItem(itemToEquip)
 		}
 	}
 

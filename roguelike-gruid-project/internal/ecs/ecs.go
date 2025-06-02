@@ -61,6 +61,93 @@ func (ecs *ECS) AddEntityWithID(id EntityID) error {
 	return nil
 }
 
+// UpdateComponent provides safe concurrent access to a component for mutation.
+// The updateFunc receives a pointer to a copy of the component and can modify it.
+// The modified component is then stored back to the ECS.
+// Returns an error if the entity doesn't exist or doesn't have the component.
+//
+// NOTE: This generic method has limitations with Go's type system. For better type safety
+// and usability, prefer type-specific methods like UpdateAIComponent.
+func (ecs *ECS) UpdateComponent(entityID EntityID, componentType components.ComponentType, updateFunc func(component interface{}) error) error {
+	ecs.mu.Lock()
+	defer ecs.mu.Unlock()
+
+	// Check if entity exists
+	if _, exists := ecs.entities[entityID]; !exists {
+		return fmt.Errorf("entity %d does not exist", entityID)
+	}
+
+	// Check if component exists
+	componentMap, exists := ecs.components[componentType]
+	if !exists {
+		return fmt.Errorf("component type %s not registered", componentType)
+	}
+
+	component, exists := componentMap[entityID]
+	if !exists {
+		return fmt.Errorf("entity %d does not have component %s", entityID, componentType)
+	}
+
+	// Create a pointer to the component for mutation
+	componentPtr := &component
+
+	// Call the update function with the component pointer
+	err := updateFunc(componentPtr)
+	if err != nil {
+		return err
+	}
+
+	// Store the modified component back
+	componentMap[entityID] = *componentPtr
+	return nil
+}
+
+// UpdateAIComponent provides type-safe access to update an AI component.
+// The updateFunc receives a pointer to the AIComponent and can modify it directly.
+// This method ensures proper concurrency control and automatic persistence.
+//
+// This is the recommended approach for component mutation as it:
+// - Provides type safety
+// - Handles concurrency automatically
+// - Persists changes automatically
+// - Prevents the state loss bug that occurred with pointer-to-copy patterns
+func (ecs *ECS) UpdateAIComponent(entityID EntityID, updateFunc func(*components.AIComponent) error) error {
+	ecs.mu.Lock()
+	defer ecs.mu.Unlock()
+
+	// Check if entity exists
+	if _, exists := ecs.entities[entityID]; !exists {
+		return fmt.Errorf("entity %d does not exist", entityID)
+	}
+
+	// Check if component exists
+	componentMap, exists := ecs.components[components.CAIComponent]
+	if !exists {
+		return fmt.Errorf("AI component type not registered")
+	}
+
+	component, exists := componentMap[entityID]
+	if !exists {
+		return fmt.Errorf("entity %d does not have AI component", entityID)
+	}
+
+	// Type assert to AIComponent
+	aiComp, ok := component.(components.AIComponent)
+	if !ok {
+		return fmt.Errorf("component is not an AIComponent")
+	}
+
+	// Call the update function with a pointer to the component
+	err := updateFunc(&aiComp)
+	if err != nil {
+		return err
+	}
+
+	// Store the modified component back
+	componentMap[entityID] = aiComp
+	return nil
+}
+
 // RemoveEntity removes an entity and all its components.
 func (ecs *ECS) RemoveEntity(id EntityID) {
 	ecs.mu.Lock()

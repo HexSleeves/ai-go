@@ -6,6 +6,7 @@ import (
 
 	"codeberg.org/anaseto/gruid"
 	"codeberg.org/anaseto/gruid/rl" // Use rl package which contains FOV
+	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/ecs/components"
 	"github.com/sirupsen/logrus"
 )
 
@@ -46,7 +47,7 @@ func NewMap(width, height int) *Map {
 
 // generateMap creates a new map layout with rooms and tunnels, and spawns monsters.
 // It now takes the game struct to access ECS and TurnQueue.
-func (m *Map) generateMap(g *Game, width, height int) gruid.Point {
+func (m *Map) generateMap(g *Game, width, height int, items map[string]components.Item) gruid.Point {
 	m.Grid.Fill(WallCell)
 
 	var rooms []Rect
@@ -85,7 +86,7 @@ func (m *Map) generateMap(g *Game, width, height int) gruid.Point {
 				// Spawn monsters in this room (if not the first room)
 				m.placeMonsters(g, newRoom)
 				// Spawn items in this room
-				m.placeItems(g, newRoom)
+				m.placeItems(g, newRoom, items)
 			}
 			rooms = append(rooms, newRoom)
 		}
@@ -198,7 +199,7 @@ func (m *Map) placeMonsters(g *Game, room Rect) {
 }
 
 // placeItems spawns items in a given room.
-func (m *Map) placeItems(g *Game, room Rect) {
+func (m *Map) placeItems(g *Game, room Rect, items map[string]components.Item) {
 	// 30% chance to spawn an item in each room
 	if rand.Intn(100) < 30 {
 		// Find a random walkable tile within the room bounds
@@ -209,7 +210,6 @@ func (m *Map) placeItems(g *Game, room Rect) {
 		// Check if the tile is walkable and not already occupied
 		if m.isWalkable(pos) && len(g.ecs.EntitiesAt(pos)) == 0 {
 			// Get available items
-			items := CreateBasicItems()
 
 			// Randomly select an item to spawn
 			itemNames := []string{"Health Potion", "Iron Sword", "Leather Armor", "Gold Coin"}

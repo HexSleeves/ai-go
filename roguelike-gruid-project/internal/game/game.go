@@ -60,8 +60,10 @@ func (g *Game) InitLevel() {
 	g.spatialGrid.Clear()
 
 	g.dungeon = NewMap(config.DungeonWidth, config.DungeonHeight)
-	playerStart := g.dungeon.generateMap(g, config.DungeonWidth, config.DungeonHeight)
-	g.SpawnPlayer(playerStart)
+
+	items := CreateBasicItems()
+	playerStart := g.dungeon.generateMap(g, config.DungeonWidth, config.DungeonHeight, items)
+	g.SpawnPlayer(playerStart, items)
 }
 
 func (g *Game) GetPlayerPosition() gruid.Point {
