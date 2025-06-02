@@ -11,9 +11,20 @@ import (
 	turn "github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/turn_queue"
 )
 
+// GameState represents the current state of the game
+type GameState int
+
+const (
+	GameStateRunning GameState = iota
+	GameStatePaused
+	GameStateGameOver
+	GameStateMenu
+)
+
 // Game represents the main game state.
 type Game struct {
 	Depth           int
+	State           GameState
 	waitingForInput bool
 
 	dungeon     *Map
@@ -29,6 +40,7 @@ type Game struct {
 
 func NewGame() *Game {
 	return &Game{
+		State:       GameStateRunning,
 		ecs:         ecs.NewECS(),
 		turnQueue:   turn.NewTurnQueue(),
 		log:         log.NewMessageLog(),
@@ -55,4 +67,20 @@ func (g *Game) InitLevel() {
 func (g *Game) GetPlayerPosition() gruid.Point {
 	// Use safe accessor - no error handling needed!
 	return g.ecs.GetPositionSafe(g.PlayerID)
+}
+
+// setGameOverState sets the game to game over state
+func (g *Game) setGameOverState() {
+	g.State = GameStateGameOver
+	g.waitingForInput = false
+}
+
+// IsGameOver returns true if the game is in game over state
+func (g *Game) IsGameOver() bool {
+	return g.State == GameStateGameOver
+}
+
+// IsRunning returns true if the game is currently running
+func (g *Game) IsRunning() bool {
+	return g.State == GameStateRunning
 }

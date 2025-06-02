@@ -1,6 +1,7 @@
 package ecs
 
 import (
+	"fmt"
 	"reflect"
 	"sync"
 
@@ -38,6 +39,26 @@ func (ecs *ECS) AddEntity() EntityID {
 	ecs.entities[id] = struct{}{}
 	ecs.nextEntityID++
 	return id
+}
+
+// AddEntityWithID creates an entity with a specific ID (used for save/load).
+// Returns an error if the ID already exists.
+func (ecs *ECS) AddEntityWithID(id EntityID) error {
+	ecs.mu.Lock()
+	defer ecs.mu.Unlock()
+
+	if _, exists := ecs.entities[id]; exists {
+		return fmt.Errorf("entity with ID %d already exists", id)
+	}
+
+	ecs.entities[id] = struct{}{}
+
+	// Update nextEntityID if necessary to avoid conflicts
+	if id >= ecs.nextEntityID {
+		ecs.nextEntityID = id + 1
+	}
+
+	return nil
 }
 
 // RemoveEntity removes an entity and all its components.

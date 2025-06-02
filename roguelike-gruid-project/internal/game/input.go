@@ -20,6 +20,17 @@ var KEYS_NORMAL = map[gruid.Key]playerAction{
 	"8":                 ActionN,
 	"6":                 ActionE,
 	"Q":                 ActionQuit,
+	"g":                 ActionPickup,
+	"D":                 ActionDrop,
+	"i":                 ActionInventory,
+	"u":                 ActionUseItem,
+	"e":                 ActionEquip,
+	".":                 ActionWait,
+	gruid.KeySpace:      ActionWait,
+	"S":                 ActionSave,
+	"L":                 ActionLoad,
+	"C":                 ActionCharacterSheet,
+	"?":                 ActionHelp,
 }
 
 func keyToDir(k playerAction) (p gruid.Point) {

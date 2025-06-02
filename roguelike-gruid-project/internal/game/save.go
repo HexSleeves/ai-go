@@ -8,8 +8,10 @@ import (
 	"time"
 
 	"codeberg.org/anaseto/gruid"
+	"codeberg.org/anaseto/gruid/rl"
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/ecs"
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/ecs/components"
+	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/log"
 	"github.com/sirupsen/logrus"
 )
 
@@ -125,6 +127,41 @@ func (g *Game) SaveGame() error {
 			savedEntity.Components["turn_actor"] = turnActor
 		}
 
+		// Save new components
+		if inventory, ok := g.ecs.GetInventory(entityID); ok {
+			savedEntity.Components["inventory"] = inventory
+		}
+		if equipment, ok := g.ecs.GetEquipment(entityID); ok {
+			savedEntity.Components["equipment"] = equipment
+		}
+		if itemPickup, ok := g.ecs.GetItemPickup(entityID); ok {
+			savedEntity.Components["item_pickup"] = itemPickup
+		}
+		if aiComponent, ok := g.ecs.GetAIComponent(entityID); ok {
+			savedEntity.Components["ai_component"] = aiComponent
+		}
+		if stats, ok := g.ecs.GetStats(entityID); ok {
+			savedEntity.Components["stats"] = stats
+		}
+		if experience, ok := g.ecs.GetExperience(entityID); ok {
+			savedEntity.Components["experience"] = experience
+		}
+		if skills, ok := g.ecs.GetSkills(entityID); ok {
+			savedEntity.Components["skills"] = skills
+		}
+		if combat, ok := g.ecs.GetCombat(entityID); ok {
+			savedEntity.Components["combat"] = combat
+		}
+		if mana, ok := g.ecs.GetMana(entityID); ok {
+			savedEntity.Components["mana"] = mana
+		}
+		if stamina, ok := g.ecs.GetStamina(entityID); ok {
+			savedEntity.Components["stamina"] = stamina
+		}
+		if statusEffects, ok := g.ecs.GetStatusEffects(entityID); ok {
+			savedEntity.Components["status_effects"] = statusEffects
+		}
+
 		saveData.Entities = append(saveData.Entities, savedEntity)
 	}
 
@@ -141,7 +178,7 @@ func (g *Game) SaveGame() error {
 		saveData.Map.Cells[y] = make([]int, g.dungeon.Width)
 		for x := 0; x < g.dungeon.Width; x++ {
 			point := gruid.Point{X: x, Y: y}
-			cell := g.dungeon.Grid.Get(point)
+			cell := g.dungeon.Grid.At(point)
 			saveData.Map.Cells[y][x] = int(cell)
 		}
 	}
@@ -152,12 +189,10 @@ func (g *Game) SaveGame() error {
 	}
 
 	// Save messages
-	messages := g.log.GetMessages()
-	for _, msg := range messages {
+	for _, msg := range g.log.Messages {
 		savedMsg := SavedMessage{
-			Text:      msg.Text,
-			Color:     uint32(msg.Color),
-			Timestamp: msg.Timestamp,
+			Text:  msg.Text,
+			Color: uint32(msg.Color),
 		}
 		saveData.Messages = append(saveData.Messages, savedMsg)
 	}
@@ -222,7 +257,7 @@ func (g *Game) LoadGame() error {
 		for x := 0; x < saveData.Map.Width; x++ {
 			if y < len(saveData.Map.Cells) && x < len(saveData.Map.Cells[y]) {
 				point := gruid.Point{X: x, Y: y}
-				cell := saveData.Map.Cells[y][x]
+				cell := rl.Cell(saveData.Map.Cells[y][x])
 				g.dungeon.Grid.Set(point, cell)
 			}
 		}
@@ -230,8 +265,12 @@ func (g *Game) LoadGame() error {
 
 	// Restore entities
 	for _, savedEntity := range saveData.Entities {
-		// Create entity with specific ID (need to implement this in ECS)
-		entityID := g.ecs.AddEntityWithID(savedEntity.ID)
+		// Create entity with specific ID
+		if err := g.ecs.AddEntityWithID(savedEntity.ID); err != nil {
+			logrus.Errorf("Failed to create entity with ID %d: %v", savedEntity.ID, err)
+			continue
+		}
+		entityID := savedEntity.ID
 
 		// Restore components
 		for compType, compData := range savedEntity.Components {
@@ -261,7 +300,91 @@ func (g *Game) LoadGame() error {
 				g.ecs.AddComponent(entityID, components.CBlocksMovement, components.BlocksMovement{})
 			case "corpse_tag":
 				g.ecs.AddComponent(entityID, components.CCorpseTag, components.CorpseTag{})
-			// Add more component types as needed
+
+			// New components
+			case "inventory":
+				if invData, ok := compData.(map[string]interface{}); ok {
+					inventory := components.Inventory{
+						Capacity: int(invData["Capacity"].(float64)),
+						Items:    []components.ItemStack{},
+					}
+					if itemsData, ok := invData["Items"].([]interface{}); ok {
+						for _, itemData := range itemsData {
+							if itemMap, ok := itemData.(map[string]interface{}); ok {
+								// Reconstruct ItemStack
+								stack := components.ItemStack{
+									Quantity: int(itemMap["Quantity"].(float64)),
+								}
+								// Reconstruct Item
+								if itemInfo, ok := itemMap["Item"].(map[string]interface{}); ok {
+									stack.Item = components.Item{
+										Name:        itemInfo["Name"].(string),
+										Description: itemInfo["Description"].(string),
+										Type:        components.ItemType(itemInfo["Type"].(float64)),
+										Glyph:       rune(itemInfo["Glyph"].(float64)),
+										Color:       gruid.Color(itemInfo["Color"].(float64)),
+										Value:       int(itemInfo["Value"].(float64)),
+										Stackable:   itemInfo["Stackable"].(bool),
+										MaxStack:    int(itemInfo["MaxStack"].(float64)),
+									}
+								}
+								inventory.Items = append(inventory.Items, stack)
+							}
+						}
+					}
+					g.ecs.AddComponent(entityID, components.CInventory, inventory)
+				}
+
+			case "equipment":
+				if eqData, ok := compData.(map[string]interface{}); ok {
+					equipment := components.Equipment{}
+					// Restore weapon
+					if weaponData, ok := eqData["Weapon"]; ok && weaponData != nil {
+						if weaponMap, ok := weaponData.(map[string]interface{}); ok {
+							weapon := components.Item{
+								Name:        weaponMap["Name"].(string),
+								Description: weaponMap["Description"].(string),
+								Type:        components.ItemType(weaponMap["Type"].(float64)),
+								Glyph:       rune(weaponMap["Glyph"].(float64)),
+								Color:       gruid.Color(weaponMap["Color"].(float64)),
+								Value:       int(weaponMap["Value"].(float64)),
+								Stackable:   weaponMap["Stackable"].(bool),
+								MaxStack:    int(weaponMap["MaxStack"].(float64)),
+							}
+							equipment.Weapon = &weapon
+						}
+					}
+					// Restore armor
+					if armorData, ok := eqData["Armor"]; ok && armorData != nil {
+						if armorMap, ok := armorData.(map[string]interface{}); ok {
+							armor := components.Item{
+								Name:        armorMap["Name"].(string),
+								Description: armorMap["Description"].(string),
+								Type:        components.ItemType(armorMap["Type"].(float64)),
+								Glyph:       rune(armorMap["Glyph"].(float64)),
+								Color:       gruid.Color(armorMap["Color"].(float64)),
+								Value:       int(armorMap["Value"].(float64)),
+								Stackable:   armorMap["Stackable"].(bool),
+								MaxStack:    int(armorMap["MaxStack"].(float64)),
+							}
+							equipment.Armor = &armor
+						}
+					}
+					g.ecs.AddComponent(entityID, components.CEquipment, equipment)
+				}
+
+			case "experience":
+				if expData, ok := compData.(map[string]interface{}); ok {
+					experience := components.Experience{
+						Level:           int(expData["Level"].(float64)),
+						CurrentXP:       int(expData["CurrentXP"].(float64)),
+						XPToNextLevel:   int(expData["XPToNextLevel"].(float64)),
+						TotalXP:         int(expData["TotalXP"].(float64)),
+						SkillPoints:     int(expData["SkillPoints"].(float64)),
+						AttributePoints: int(expData["AttributePoints"].(float64)),
+					}
+					g.ecs.AddComponent(entityID, components.CExperience, experience)
+				}
 			}
 		}
 	}
@@ -270,10 +393,9 @@ func (g *Game) LoadGame() error {
 	g.turnQueue.CurrentTime = saveData.TurnQueue.CurrentTime
 
 	// Restore messages
-	g.log.Clear()
+	g.log.Messages = []log.Message{}
 	for _, savedMsg := range saveData.Messages {
-		// Add message with original timestamp
-		g.log.AddMessageWithTime(gruid.Color(savedMsg.Color), savedMsg.Text, savedMsg.Timestamp)
+		g.log.AddMessage(savedMsg.Text, gruid.Color(savedMsg.Color))
 	}
 
 	logrus.Infof("Game loaded from %s", savePath)

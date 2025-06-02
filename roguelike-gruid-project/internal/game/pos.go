@@ -15,23 +15,19 @@ func (g *Game) UpdateEntityPosition(id ecs.EntityID, oldPos, newPos gruid.Point)
 	g.spatialGrid.Move(id, oldPos, newPos)
 }
 
-// checkCollision checks if a given position is a valid move
-func (g *Game) checkCollision(pos gruid.Point) bool {
+// checkCollision checks if a given position is a valid move for the specified entity
+func (g *Game) checkCollision(pos gruid.Point, movingEntityID ecs.EntityID) bool {
 	if !g.dungeon.InBounds(pos) {
 		return true // Out of bounds
 	}
 
 	// Check for blocking entities (excluding the entity trying to move)
 	for _, id := range g.ecs.EntitiesAt(pos) {
-		// We need the ID of the entity trying to move to avoid self-collision check
-		// This function needs the moving entity's ID passed in.
-		// Let's assume it's passed as 'movingEntityID' for now.
-		// if id == movingEntityID {
-		//  continue
-		// }
-		// TODO: Refactor checkCollision to accept the moving entity's ID
-		if g.ecs.HasComponent(id, components.CPosition) {
-			return true // Collision with *any* other entity at the target position
+		if id == movingEntityID {
+			continue // Skip self-collision check
+		}
+		if g.ecs.HasComponent(id, components.CBlocksMovement) {
+			return true // Collision with blocking entity
 		}
 	}
 
@@ -53,9 +49,12 @@ func (g *Game) EntityBump(entityID ecs.EntityID, delta gruid.Point) (moved bool,
 	newPos := currentPos.Add(delta)
 
 	// Check map bounds and walkability first
-	if !g.dungeon.InBounds(newPos) || !g.dungeon.isWalkable(newPos) {
-		// TODO: Differentiate between bumping wall and out of bounds?
-		return false, nil // Bumped into wall or edge
+	if !g.dungeon.InBounds(newPos) {
+		return false, fmt.Errorf("entity %d attempted to move out of bounds to %v", entityID, newPos)
+	}
+
+	if !g.dungeon.isWalkable(newPos) {
+		return false, fmt.Errorf("entity %d attempted to move into wall at %v", entityID, newPos)
 	}
 
 	// Check for collision with other entities at the target position

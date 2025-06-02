@@ -89,7 +89,7 @@ func (a AttackAction) Execute(g *Game) (cost uint, err error) {
 
 	// Check for death (CurrentHP <= 0) and handle it
 	if targetHealth.IsDead() {
-		g.handleEntityDeath(a.TargetID, targetName)
+		g.handleEntityDeath(a.TargetID, targetName, a.AttackerID)
 	}
 
 	return 100, nil // Standard attack cost
@@ -97,15 +97,22 @@ func (a AttackAction) Execute(g *Game) (cost uint, err error) {
 
 // handleEntityDeath handles an entity's death, either removing it completely
 // or turning it into a corpse (the preferred option)
-func (g *Game) handleEntityDeath(entityID ecs.EntityID, entityName string) {
+func (g *Game) handleEntityDeath(entityID ecs.EntityID, entityName string, killerID ecs.EntityID) {
 	g.log.AddMessagef(ui.ColorDeath, "%s dies!", entityName)
 	logrus.Infof("Entity %s (%d) has died.", entityName, entityID)
 
 	if entityID == g.PlayerID {
 		g.log.AddMessagef(ui.ColorCritical, "You died! Game over!")
 		logrus.Info("Player has died. Game over!")
-		// TODO: Implement game over state
+		g.setGameOverState()
 		return
+	}
+
+	// Award experience to the killer if it exists
+	if killerID != 0 && g.ecs.EntityExists(killerID) {
+		expSystem := NewExperienceSystem(g)
+		xpReward := expSystem.GetExperienceForKill(killerID, entityID)
+		expSystem.AwardExperience(killerID, xpReward)
 	}
 
 	// Turn entity into a corpse
