@@ -16,9 +16,20 @@ func TestTileMapping(t *testing.T) {
 	
 	// Test basic rune mapping
 	playerTile := tm.GetTileForRune('@')
-	expectedPath := filepath.Join(tempDir, "characters/knight_m.png")
-	if playerTile != expectedPath {
-		t.Errorf("Expected player tile path %s, got %s", expectedPath, playerTile)
+	// Player tile should be one of the available options
+	expectedPaths := []string{
+		filepath.Join(tempDir, "characters/knight_m.png"),
+		filepath.Join(tempDir, "characters/knight_f.png"),
+	}
+	found := false
+	for _, expected := range expectedPaths {
+		if playerTile == expected {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("Expected player tile to be one of %v, got %s", expectedPaths, playerTile)
 	}
 	
 	// Test fallback for unknown rune
