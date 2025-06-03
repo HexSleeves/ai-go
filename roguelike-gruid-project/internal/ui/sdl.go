@@ -11,8 +11,8 @@ import (
 )
 
 var driver gruid.Driver
-var currentTileManager gruid.TileManager
-var fontTileDrawer gruid.TileManager
+var currentTileManager sdl.TileManager
+var fontTileDrawer sdl.TileManager
 var imageTileManager *ImageTileManager
 
 func init() {

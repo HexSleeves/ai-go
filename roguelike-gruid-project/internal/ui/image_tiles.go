@@ -13,22 +13,23 @@ import (
 	"sync"
 
 	"codeberg.org/anaseto/gruid"
+	sdl "codeberg.org/anaseto/gruid-sdl"
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/config"
 	"github.com/sirupsen/logrus"
 )
 
-// ImageTileManager implements gruid.TileManager for image-based tiles
+// ImageTileManager implements sdl.TileManager for image-based tiles
 type ImageTileManager struct {
 	tileCache     map[string]image.Image
 	coloredCache  map[string]map[gruid.Color]image.Image
 	tileMapping   *TileMapping
 	config        *config.TileConfig
 	mutex         sync.RWMutex
-	fontFallback  gruid.TileManager // Fallback to font-based rendering
+	fontFallback  sdl.TileManager // Fallback to font-based rendering
 }
 
 // NewImageTileManager creates a new image-based tile manager
-func NewImageTileManager(config *config.TileConfig, fontFallback gruid.TileManager) *ImageTileManager {
+func NewImageTileManager(config *config.TileConfig, fontFallback sdl.TileManager) *ImageTileManager {
 	itm := &ImageTileManager{
 		tileCache:    make(map[string]image.Image),
 		coloredCache: make(map[string]map[gruid.Color]image.Image),
@@ -43,7 +44,7 @@ func NewImageTileManager(config *config.TileConfig, fontFallback gruid.TileManag
 	return itm
 }
 
-// GetImage implements gruid.TileManager.GetImage
+// GetImage implements sdl.TileManager.GetImage
 func (itm *ImageTileManager) GetImage(c gruid.Cell) image.Image {
 	// If tiles are disabled, use font fallback
 	if !itm.config.Enabled {
@@ -78,7 +79,7 @@ func (itm *ImageTileManager) GetImage(c gruid.Cell) image.Image {
 	return coloredImg
 }
 
-// TileSize implements gruid.TileManager.TileSize
+// TileSize implements sdl.TileManager.TileSize
 func (itm *ImageTileManager) TileSize() gruid.Point {
 	size := itm.config.TileSize
 	scale := itm.config.ScaleFactor
