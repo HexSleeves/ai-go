@@ -50,6 +50,12 @@ type Model struct {
 	pathfindingDebugInfo *PathfindingDebugInfo
 	eventQueue           []gruid.Msg
 	lastInputTime        time.Time
+
+	// Debug system
+	debugLevel    DebugLevel
+	showFOVDebug  bool
+	showAIDebug   bool
+	aiDebugInfo   *AIDebugInfo
 }
 
 // NewModel creates a new game model
@@ -68,6 +74,9 @@ func NewModel(grid gruid.Grid) *Model {
 		showPathfindingDebug: false,
 		eventQueue:           make([]gruid.Msg, 0),
 		lastInputTime:        time.Now(),
+		debugLevel:           DebugNone,
+		showFOVDebug:         false,
+		showAIDebug:          false,
 	}
 }
 
@@ -107,8 +116,9 @@ func (md *Model) EndTurn() gruid.Effect {
 	md.updateCount++
 	md.lastUpdateTime = time.Now()
 
-	// Update pathfinding debug information if enabled
+	// Update debug information if enabled
 	md.UpdatePathfindingDebug()
+	md.UpdateAIDebug()
 
 	// Return nil to indicate the screen should be redrawn
 	return nil
@@ -166,6 +176,83 @@ func (md *Model) GetPathfindingDebugInfo() *PathfindingDebugInfo {
 	return md.pathfindingDebugInfo
 }
 
+// ToggleFOVDebug toggles FOV debug visualization
+func (md *Model) ToggleFOVDebug() {
+	md.showFOVDebug = !md.showFOVDebug
+	logrus.Infof("FOV debug visualization %s", map[bool]string{true: "enabled", false: "disabled"}[md.showFOVDebug])
+}
+
+// ToggleAIDebug toggles AI debug visualization
+func (md *Model) ToggleAIDebug() {
+	md.showAIDebug = !md.showAIDebug
+
+	if md.showAIDebug {
+		md.aiDebugInfo = md.game.CollectAIDebugInfo()
+		logrus.Info("AI debug visualization enabled")
+	} else {
+		md.aiDebugInfo = nil
+		logrus.Info("AI debug visualization disabled")
+	}
+}
+
+// CycleDebugLevel cycles through debug levels
+func (md *Model) CycleDebugLevel() {
+	md.debugLevel = (md.debugLevel + 1) % 5 // 0-4
+
+	// Update individual debug flags based on level
+	switch md.debugLevel {
+	case DebugNone:
+		md.showFOVDebug = false
+		md.showPathfindingDebug = false
+		md.showAIDebug = false
+		if md.game.pathfindingMgr != nil {
+			md.game.pathfindingMgr.DisablePathfindingDebug()
+		}
+		md.pathfindingDebugInfo = nil
+		md.aiDebugInfo = nil
+	case DebugFOV:
+		md.showFOVDebug = true
+		md.showPathfindingDebug = false
+		md.showAIDebug = false
+	case DebugPathfinding:
+		md.showFOVDebug = false
+		md.showPathfindingDebug = true
+		md.showAIDebug = false
+		if md.game.pathfindingMgr != nil {
+			md.game.pathfindingMgr.EnablePathfindingDebug()
+			md.pathfindingDebugInfo = md.game.pathfindingMgr.GetDebugInfo()
+		}
+	case DebugAI:
+		md.showFOVDebug = false
+		md.showPathfindingDebug = false
+		md.showAIDebug = true
+		md.aiDebugInfo = md.game.CollectAIDebugInfo()
+	case DebugFull:
+		md.showFOVDebug = true
+		md.showPathfindingDebug = true
+		md.showAIDebug = true
+		if md.game.pathfindingMgr != nil {
+			md.game.pathfindingMgr.EnablePathfindingDebug()
+			md.pathfindingDebugInfo = md.game.pathfindingMgr.GetDebugInfo()
+		}
+		md.aiDebugInfo = md.game.CollectAIDebugInfo()
+	}
+
+	logrus.Infof("Debug level set to: %s", md.debugLevel.String())
+}
+
+// UpdateAIDebug updates AI debug information
+func (md *Model) UpdateAIDebug() {
+	if md.showAIDebug || md.debugLevel == DebugAI || md.debugLevel == DebugFull {
+		md.aiDebugInfo = md.game.CollectAIDebugInfo()
+	}
+}
+
+// GetAIDebugInfo returns current AI debug information
+func (md *Model) GetAIDebugInfo() *AIDebugInfo {
+	return md.aiDebugInfo
+}
+
 // QueueEvent adds an event to the event queue for processing
 func (md *Model) QueueEvent(msg gruid.Msg) {
 	md.eventQueue = append(md.eventQueue, msg)
@@ -204,6 +291,18 @@ func (md *Model) processEvent(msg gruid.Msg) gruid.Effect {
 				stats := md.game.pathfindingMgr.GetPathfindingStats()
 				logrus.WithFields(logrus.Fields(stats)).Info("Pathfinding Statistics")
 			}
+			return nil
+		case "F3":
+			// Toggle FOV debug
+			md.ToggleFOVDebug()
+			return nil
+		case "F4":
+			// Toggle AI debug
+			md.ToggleAIDebug()
+			return nil
+		case "F5":
+			// Cycle debug levels
+			md.CycleDebugLevel()
 			return nil
 		}
 	}

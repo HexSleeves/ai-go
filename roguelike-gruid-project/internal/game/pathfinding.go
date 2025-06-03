@@ -477,6 +477,7 @@ type PathfindingDebugInfo struct {
 	EntityPaths    map[ecs.EntityID][]gruid.Point
 	FailedPaths    map[ecs.EntityID]gruid.Point // Entity -> failed target
 	PathStrategies map[ecs.EntityID]PathfindingStrategy
+	AIStates       map[ecs.EntityID]components.AIState // AI state for color coding
 	LastUpdate     int // Turn number
 }
 
@@ -486,6 +487,7 @@ func (pm *PathfindingManager) GetDebugInfo() *PathfindingDebugInfo {
 		EntityPaths:    make(map[ecs.EntityID][]gruid.Point),
 		FailedPaths:    make(map[ecs.EntityID]gruid.Point),
 		PathStrategies: make(map[ecs.EntityID]PathfindingStrategy),
+		AIStates:       make(map[ecs.EntityID]components.AIState),
 		LastUpdate:     pm.game.stats.TurnCount,
 	}
 
@@ -494,6 +496,12 @@ func (pm *PathfindingManager) GetDebugInfo() *PathfindingDebugInfo {
 	for _, entityID := range entities {
 		pathComp := pm.game.ecs.GetPathfindingComponentSafe(entityID)
 		if pathComp != nil {
+			// Get AI state for color coding
+			if pm.game.ecs.HasAIComponentSafe(entityID) {
+				aiComp := pm.game.ecs.GetAIComponentSafe(entityID)
+				debug.AIStates[entityID] = aiComp.State
+			}
+
 			if pathComp.PathValid && len(pathComp.CurrentPath) > 0 {
 				// Copy the path for debug display
 				debug.EntityPaths[entityID] = make([]gruid.Point, len(pathComp.CurrentPath))
