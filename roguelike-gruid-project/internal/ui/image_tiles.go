@@ -1,12 +1,11 @@
-//go:build js || sdl
-// +build js sdl
+//go:build !js
+// +build !js
 
 package ui
 
 import (
 	"fmt"
 	"image"
-	"image/color"
 	"image/draw"
 	"image/png"
 	"os"
@@ -21,13 +20,13 @@ import (
 
 // ImageTileManager implements sdl.TileManager for image-based tiles
 type ImageTileManager struct {
-	tileCache     map[string]image.Image
-	coloredCache  map[string]map[gruid.Color]image.Image
-	tileMapping   *TileMapping
-	spriteAtlas   *KenneyRoguelikeAtlas // Sprite atlas for extracting tiles
-	config        *config.TileConfig
-	mutex         sync.RWMutex
-	fontFallback  sdl.TileManager // Fallback to font-based rendering
+	tileCache    map[string]image.Image
+	coloredCache map[string]map[gruid.Color]image.Image
+	tileMapping  *TileMapping
+	spriteAtlas  *KenneyRoguelikeAtlas // Sprite atlas for extracting tiles
+	config       *config.TileConfig
+	mutex        sync.RWMutex
+	fontFallback sdl.TileManager // Fallback to font-based rendering
 }
 
 // NewImageTileManager creates a new image-based tile manager
@@ -51,8 +50,6 @@ func NewImageTileManager(config *config.TileConfig, fontFallback sdl.TileManager
 
 // loadSpriteAtlas attempts to load the Kenney spritesheet
 func (itm *ImageTileManager) loadSpriteAtlas() {
-	spritesheetPath := filepath.Join(itm.config.TilesetPath, "roguelike_spritesheet.png")
-
 	// Try alternative common names for the spritesheet
 	alternativePaths := []string{
 		filepath.Join(itm.config.TilesetPath, "roguelike_spritesheet.png"),
@@ -81,15 +78,15 @@ func (itm *ImageTileManager) GetImage(c gruid.Cell) image.Image {
 		}
 		return itm.generateFallbackImage(c)
 	}
-	
+
 	// Get tile path for this rune
 	tilePath := itm.tileMapping.GetTileForRune(c.Rune)
-	
+
 	// Try to get colored version from cache
 	if img := itm.getCachedColoredTile(tilePath, c.Style.Fg, c.Style.Bg); img != nil {
 		return img
 	}
-	
+
 	// Load base tile
 	baseImg := itm.loadTile(tilePath)
 	if baseImg == nil {
@@ -99,11 +96,11 @@ func (itm *ImageTileManager) GetImage(c gruid.Cell) image.Image {
 		}
 		return itm.generateFallbackImage(c)
 	}
-	
+
 	// Apply colors and cache result
 	coloredImg := itm.applyColors(baseImg, c.Style.Fg, c.Style.Bg, c.Style.Attrs)
 	itm.cacheColoredTile(tilePath, c.Style.Fg, coloredImg)
-	
+
 	return coloredImg
 }
 
@@ -220,7 +217,7 @@ func (itm *ImageTileManager) loadTileFromFile(tilePath string) image.Image {
 func (itm *ImageTileManager) getCachedColoredTile(tilePath string, fg, bg gruid.Color) image.Image {
 	itm.mutex.RLock()
 	defer itm.mutex.RUnlock()
-	
+
 	if colorMap, exists := itm.coloredCache[tilePath]; exists {
 		if img, exists := colorMap[fg]; exists {
 			return img
@@ -233,7 +230,7 @@ func (itm *ImageTileManager) getCachedColoredTile(tilePath string, fg, bg gruid.
 func (itm *ImageTileManager) cacheColoredTile(tilePath string, fg gruid.Color, img image.Image) {
 	itm.mutex.Lock()
 	defer itm.mutex.Unlock()
-	
+
 	if itm.coloredCache[tilePath] == nil {
 		itm.coloredCache[tilePath] = make(map[gruid.Color]image.Image)
 	}
@@ -244,21 +241,21 @@ func (itm *ImageTileManager) cacheColoredTile(tilePath string, fg gruid.Color, i
 func (itm *ImageTileManager) applyColors(baseImg image.Image, fg, bg gruid.Color, attrs gruid.AttrMask) image.Image {
 	bounds := baseImg.Bounds()
 	coloredImg := image.NewRGBA(bounds)
-	
+
 	fgColor := ColorToRGBA(fg, true)
 	bgColor := ColorToRGBA(bg, false)
-	
+
 	// Handle reverse attribute
 	if attrs&AttrReverse != 0 {
 		fgColor, bgColor = bgColor, fgColor
 	}
-	
+
 	// Apply colors based on the original image
 	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
 		for x := bounds.Min.X; x < bounds.Max.X; x++ {
 			originalColor := baseImg.At(x, y)
 			r, g, b, a := originalColor.RGBA()
-			
+
 			// If pixel is transparent, use background color
 			if a == 0 {
 				coloredImg.Set(x, y, bgColor)
@@ -273,7 +270,7 @@ func (itm *ImageTileManager) applyColors(baseImg image.Image, fg, bg gruid.Color
 			}
 		}
 	}
-	
+
 	return coloredImg
 }
 
@@ -282,25 +279,25 @@ func (itm *ImageTileManager) scaleImage(img image.Image) image.Image {
 	if itm.config.ScaleFactor == 1.0 {
 		return img
 	}
-	
+
 	bounds := img.Bounds()
 	newWidth := int(float32(bounds.Dx()) * itm.config.ScaleFactor)
 	newHeight := int(float32(bounds.Dy()) * itm.config.ScaleFactor)
-	
+
 	scaledImg := image.NewRGBA(image.Rect(0, 0, newWidth, newHeight))
-	
+
 	// Simple nearest-neighbor scaling
 	for y := 0; y < newHeight; y++ {
 		for x := 0; x < newWidth; x++ {
 			srcX := int(float32(x) / itm.config.ScaleFactor)
 			srcY := int(float32(y) / itm.config.ScaleFactor)
-			
+
 			if srcX < bounds.Max.X && srcY < bounds.Max.Y {
 				scaledImg.Set(x, y, img.At(bounds.Min.X+srcX, bounds.Min.Y+srcY))
 			}
 		}
 	}
-	
+
 	return scaledImg
 }
 
@@ -308,31 +305,31 @@ func (itm *ImageTileManager) scaleImage(img image.Image) image.Image {
 func (itm *ImageTileManager) generateFallbackImage(c gruid.Cell) image.Image {
 	size := itm.TileSize()
 	img := image.NewRGBA(image.Rect(0, 0, size.X, size.Y))
-	
+
 	fgColor := ColorToRGBA(c.Style.Fg, true)
 	bgColor := ColorToRGBA(c.Style.Bg, false)
-	
+
 	// Fill with background color
 	draw.Draw(img, img.Bounds(), &image.Uniform{bgColor}, image.Point{}, draw.Src)
-	
+
 	// Draw a simple representation of the character
 	// This is a very basic fallback - in practice you might want something more sophisticated
 	centerX, centerY := size.X/2, size.Y/2
-	for y := centerY - 2; y <= centerY + 2; y++ {
-		for x := centerX - 2; x <= centerX + 2; x++ {
+	for y := centerY - 2; y <= centerY+2; y++ {
+		for x := centerX - 2; x <= centerX+2; x++ {
 			if x >= 0 && x < size.X && y >= 0 && y < size.Y {
 				img.Set(x, y, fgColor)
 			}
 		}
 	}
-	
+
 	return img
 }
 
 // preloadCommonTiles loads frequently used tiles into cache
 func (itm *ImageTileManager) preloadCommonTiles() {
 	commonRunes := []rune{'@', '#', '.', '+', '!', '?', 'o', 'g', 's'}
-	
+
 	for _, r := range commonRunes {
 		tilePath := itm.tileMapping.GetTileForRune(r)
 		itm.loadTile(tilePath) // This will cache the tile
@@ -344,10 +341,10 @@ func (itm *ImageTileManager) evictOldestTiles() {
 	// Simple eviction: remove 25% of cached tiles
 	// In a more sophisticated implementation, you'd use LRU
 	targetSize := itm.config.CacheSize * 3 / 4
-	
+
 	count := 0
 	for tilePath := range itm.tileCache {
-		if count >= len(itm.tileCache) - targetSize {
+		if count >= len(itm.tileCache)-targetSize {
 			break
 		}
 		delete(itm.tileCache, tilePath)
@@ -360,7 +357,7 @@ func (itm *ImageTileManager) evictOldestTiles() {
 func (itm *ImageTileManager) ClearCache() {
 	itm.mutex.Lock()
 	defer itm.mutex.Unlock()
-	
+
 	itm.tileCache = make(map[string]image.Image)
 	itm.coloredCache = make(map[string]map[gruid.Color]image.Image)
 }
@@ -369,10 +366,10 @@ func (itm *ImageTileManager) ClearCache() {
 func (itm *ImageTileManager) UpdateConfig(newConfig *config.TileConfig) {
 	itm.mutex.Lock()
 	defer itm.mutex.Unlock()
-	
+
 	itm.config = newConfig
 	itm.tileMapping = NewTileMapping(newConfig.TilesetPath)
-	
+
 	// Clear cache if tileset path changed
 	itm.ClearCache()
 }
@@ -386,7 +383,7 @@ func (itm *ImageTileManager) GetTileMapping() *TileMapping {
 func (itm *ImageTileManager) String() string {
 	itm.mutex.RLock()
 	defer itm.mutex.RUnlock()
-	
-	return fmt.Sprintf("ImageTileManager{CachedTiles: %d, ColoredTiles: %d, Enabled: %v}", 
+
+	return fmt.Sprintf("ImageTileManager{CachedTiles: %d, ColoredTiles: %d, Enabled: %v}",
 		len(itm.tileCache), len(itm.coloredCache), itm.config.Enabled)
 }

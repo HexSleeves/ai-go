@@ -1,5 +1,5 @@
-//go:build js || sdl
-// +build js sdl
+//go:build !js
+// +build !js
 
 package ui
 

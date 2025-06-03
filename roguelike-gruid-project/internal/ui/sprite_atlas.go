@@ -1,5 +1,5 @@
-//go:build js || sdl
-// +build js sdl
+//go:build !js
+// +build !js
 
 package ui
 
@@ -42,7 +42,7 @@ func NewSpriteAtlas(spritesheetPath string, tileSize int) (*SpriteAtlas, error) 
 	tilesPerRow := bounds.Dx() / tileSize
 	tilesPerCol := bounds.Dy() / tileSize
 
-	logrus.Infof("Loaded spritesheet: %dx%d pixels, %dx%d tiles (%d total)", 
+	logrus.Infof("Loaded spritesheet: %dx%d pixels, %dx%d tiles (%d total)",
 		bounds.Dx(), bounds.Dy(), tilesPerRow, tilesPerCol, tilesPerRow*tilesPerCol)
 
 	return &SpriteAtlas{
@@ -58,7 +58,7 @@ func NewSpriteAtlas(spritesheetPath string, tileSize int) (*SpriteAtlas, error) 
 // Coordinates are 0-based, where (0,0) is the top-left sprite
 func (sa *SpriteAtlas) GetSprite(x, y int) image.Image {
 	coord := gruid.Point{X: x, Y: y}
-	
+
 	// Check cache first
 	sa.mutex.RLock()
 	if sprite, exists := sa.cache[coord]; exists {
@@ -69,14 +69,14 @@ func (sa *SpriteAtlas) GetSprite(x, y int) image.Image {
 
 	// Validate coordinates
 	if x < 0 || x >= sa.tilesPerRow || y < 0 || y >= sa.tilesPerCol {
-		logrus.Warnf("Sprite coordinates out of bounds: (%d,%d), max: (%d,%d)", 
+		logrus.Warnf("Sprite coordinates out of bounds: (%d,%d), max: (%d,%d)",
 			x, y, sa.tilesPerRow-1, sa.tilesPerCol-1)
 		return nil
 	}
 
 	// Extract sprite from spritesheet
 	sprite := sa.extractSprite(x, y)
-	
+
 	// Cache the extracted sprite
 	sa.mutex.Lock()
 	sa.cache[coord] = sprite
@@ -111,7 +111,7 @@ func (sa *SpriteAtlas) extractSprite(x, y int) image.Image {
 // Index 0 is top-left, increases left-to-right, then top-to-bottom
 func (sa *SpriteAtlas) GetSpriteByIndex(index int) image.Image {
 	if index < 0 || index >= sa.tilesPerRow*sa.tilesPerCol {
-		logrus.Warnf("Sprite index out of bounds: %d, max: %d", 
+		logrus.Warnf("Sprite index out of bounds: %d, max: %d",
 			index, sa.tilesPerRow*sa.tilesPerCol-1)
 		return nil
 	}
@@ -187,28 +187,28 @@ func NewKenneyRoguelikeAtlas(spritesheetPath string) (*KenneyRoguelikeAtlas, err
 // These are approximate - you'll need to adjust based on the actual spritesheet layout
 var (
 	// Characters (approximate positions - adjust based on actual spritesheet)
-	KenneyPlayer     = gruid.Point{X: 28, Y: 0}  // Knight character
-	KenneyPlayerAlt  = gruid.Point{X: 29, Y: 0}  // Alternative player
+	KenneyPlayer    = gruid.Point{X: 28, Y: 0} // Knight character
+	KenneyPlayerAlt = gruid.Point{X: 29, Y: 0} // Alternative player
 
 	// Monsters (approximate positions)
-	KenneyOrc        = gruid.Point{X: 14, Y: 19} // Orc
-	KenneyGoblin     = gruid.Point{X: 13, Y: 19} // Goblin  
-	KenneySkeleton   = gruid.Point{X: 15, Y: 19} // Skeleton
-	KenneyDragon     = gruid.Point{X: 24, Y: 18} // Dragon
+	KenneyOrc      = gruid.Point{X: 14, Y: 19} // Orc
+	KenneyGoblin   = gruid.Point{X: 13, Y: 19} // Goblin
+	KenneySkeleton = gruid.Point{X: 15, Y: 19} // Skeleton
+	KenneyDragon   = gruid.Point{X: 24, Y: 18} // Dragon
 
 	// Environment (approximate positions)
-	KenneyWall       = gruid.Point{X: 1, Y: 2}   // Wall
-	KenneyFloor      = gruid.Point{X: 0, Y: 2}   // Floor
-	KenneyDoor       = gruid.Point{X: 2, Y: 2}   // Door
-	KenneyStairsDown = gruid.Point{X: 3, Y: 2}   // Stairs down
-	KenneyStairsUp   = gruid.Point{X: 4, Y: 2}   // Stairs up
+	KenneyWall       = gruid.Point{X: 1, Y: 2} // Wall
+	KenneyFloor      = gruid.Point{X: 0, Y: 2} // Floor
+	KenneyDoor       = gruid.Point{X: 2, Y: 2} // Door
+	KenneyStairsDown = gruid.Point{X: 3, Y: 2} // Stairs down
+	KenneyStairsUp   = gruid.Point{X: 4, Y: 2} // Stairs up
 
 	// Items (approximate positions)
-	KenneyPotionRed  = gruid.Point{X: 9, Y: 23}  // Red potion
-	KenneyScroll     = gruid.Point{X: 6, Y: 23}  // Scroll
-	KenneySword      = gruid.Point{X: 0, Y: 29}  // Sword
-	KenneyShield     = gruid.Point{X: 6, Y: 29}  // Shield
-	KenneyCoin       = gruid.Point{X: 9, Y: 26}  // Gold coin
+	KenneyPotionRed = gruid.Point{X: 9, Y: 23} // Red potion
+	KenneyScroll    = gruid.Point{X: 6, Y: 23} // Scroll
+	KenneySword     = gruid.Point{X: 0, Y: 29} // Sword
+	KenneyShield    = gruid.Point{X: 6, Y: 29} // Shield
+	KenneyCoin      = gruid.Point{X: 9, Y: 26} // Gold coin
 )
 
 // GetPlayerSprite returns the player character sprite

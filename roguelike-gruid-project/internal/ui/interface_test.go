@@ -1,5 +1,5 @@
-//go:build js || sdl
-// +build js sdl
+//go:build !js
+// +build !js
 
 package ui
 
@@ -17,10 +17,10 @@ import (
 func TestTileManagerInterface(t *testing.T) {
 	// Test that TileDrawer implements sdl.TileManager
 	var _ sdl.TileManager = (*TileDrawer)(nil)
-	
+
 	// Test that ImageTileManager implements sdl.TileManager
 	var _ sdl.TileManager = (*ImageTileManager)(nil)
-	
+
 	t.Log("Both TileDrawer and ImageTileManager implement sdl.TileManager interface")
 }
 
@@ -28,7 +28,7 @@ func TestTileManagerInterface(t *testing.T) {
 func TestImageTileManagerCreation(t *testing.T) {
 	// Create a mock font tile manager
 	mockFontTileManager := &MockTileManager{}
-	
+
 	// Create tile config
 	config := &config.TileConfig{
 		Enabled:      true,
@@ -38,27 +38,27 @@ func TestImageTileManagerCreation(t *testing.T) {
 		UseSmoothing: true,
 		CacheSize:    100,
 	}
-	
+
 	// Create ImageTileManager
 	itm := NewImageTileManager(config, mockFontTileManager)
-	
+
 	if itm == nil {
 		t.Fatal("NewImageTileManager returned nil")
 	}
-	
+
 	// Test TileSize method
 	size := itm.TileSize()
 	expectedSize := gruid.Point{X: 16, Y: 16}
 	if size != expectedSize {
 		t.Errorf("Expected tile size %v, got %v", expectedSize, size)
 	}
-	
+
 	// Test GetImage method with a simple cell
 	cell := gruid.Cell{
 		Rune:  '@',
 		Style: gruid.Style{Fg: gruid.ColorDefault, Bg: gruid.ColorDefault},
 	}
-	
+
 	img := itm.GetImage(cell)
 	if img == nil {
 		t.Error("GetImage returned nil")
@@ -104,13 +104,13 @@ func TestTileManagerCompatibility(t *testing.T) {
 		Height:      24,
 		WindowTitle: "Test",
 	}
-	
+
 	// This should not panic - it tests that our interface is compatible
 	driver := sdl.NewDriver(cfg)
 	if driver == nil {
 		t.Error("Failed to create SDL driver with our TileManager")
 	}
-	
+
 	// Test with ImageTileManager
 	tileConfig := &config.TileConfig{
 		Enabled:      true,
@@ -120,16 +120,16 @@ func TestTileManagerCompatibility(t *testing.T) {
 		UseSmoothing: true,
 		CacheSize:    100,
 	}
-	
+
 	itm := NewImageTileManager(tileConfig, &MockTileManager{})
-	
+
 	cfg2 := sdl.Config{
 		TileManager: itm,
 		Width:       80,
 		Height:      24,
 		WindowTitle: "Test",
 	}
-	
+
 	driver2 := sdl.NewDriver(cfg2)
 	if driver2 == nil {
 		t.Error("Failed to create SDL driver with ImageTileManager")

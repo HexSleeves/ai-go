@@ -13,13 +13,9 @@ build:
 run: build
     ./roguelike
 
-# Run directly with Go run command
+# Run directly with Go run command (uses SDL by default)
 run-dev:
     cd roguelike-gruid-project && go run ./cmd/roguelike
-
-# Run with SDL backend
-run-sdl:
-    cd roguelike-gruid-project && go run --tags sdl ./cmd/roguelike
 
 # Build and run with race detection
 run-race:
