@@ -230,7 +230,7 @@ func TestGameStatisticsIntegration(t *testing.T) {
 
 	// Pick up the item
 	pickupAction := PickupAction{EntityID: playerID, ItemID: itemID}
-	err = pickupAction.Execute(game)
+	_, err = pickupAction.Execute(game)
 	if err != nil {
 		t.Errorf("Pickup action failed: %v", err)
 	}

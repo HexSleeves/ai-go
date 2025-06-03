@@ -15,25 +15,6 @@ func (g *Game) UpdateEntityPosition(id ecs.EntityID, oldPos, newPos gruid.Point)
 	g.spatialGrid.Move(id, oldPos, newPos)
 }
 
-// checkCollision checks if a given position is a valid move for the specified entity
-func (g *Game) checkCollision(pos gruid.Point, movingEntityID ecs.EntityID) bool {
-	if !g.dungeon.InBounds(pos) {
-		return true // Out of bounds
-	}
-
-	// Check for blocking entities (excluding the entity trying to move)
-	for _, id := range g.ecs.EntitiesAt(pos) {
-		if id == movingEntityID {
-			continue // Skip self-collision check
-		}
-		if g.ecs.HasComponent(id, components.CBlocksMovement) {
-			return true // Collision with blocking entity
-		}
-	}
-
-	return false
-}
-
 // EntityBump attempts to move the entity with the given ID by the delta.
 // It checks for map boundaries and collisions with other entities.
 // It returns true if the entity successfully moved, false otherwise (due to wall or collision).
@@ -42,7 +23,7 @@ func (g *Game) EntityBump(entityID ecs.EntityID, delta gruid.Point) (moved bool,
 	currentPos := g.ecs.GetPositionSafe(entityID)
 
 	// Check if entity actually has a position (zero value check)
-	if currentPos == (gruid.Point{}) && g.ecs.HasPositionSafe(entityID) == false {
+	if currentPos == (gruid.Point{}) && !g.ecs.HasPositionSafe(entityID) {
 		return false, fmt.Errorf("entity %d has no position component", entityID)
 	}
 

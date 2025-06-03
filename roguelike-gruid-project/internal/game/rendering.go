@@ -176,8 +176,8 @@ func (md *Model) renderEntitiesInViewport(world *ecs.ECS, playerFOV *components.
 
 		// Only process entities that are visible and in viewport
 		if world.HasPositionSafe(id) &&
-		   playerFOV.IsVisible(pos, mapWidth) &&
-		   md.camera.IsInViewport(pos.X, pos.Y) {
+			playerFOV.IsVisible(pos, mapWidth) &&
+			md.camera.IsInViewport(pos.X, pos.Y) {
 			visibleEntities = append(visibleEntities, id)
 			renderOrderCache[id] = RenderOrder(world, id)
 		}
@@ -200,53 +200,6 @@ func (md *Model) renderEntitiesInViewport(world *ecs.ECS, playerFOV *components.
 				// Use safe accessor - no error handling needed!
 				worldPos := world.GetPositionSafe(id)
 				md.drawEntityInViewport(world, worldPos, id)
-			}
-		}
-	}
-}
-
-// RenderSystem draws all entities with Position and Renderable components onto the grid.
-func (md *Model) renderEntitiesSystem(world *ecs.ECS, playerFOV *components.FOV, mapWidth int) {
-	utils.Assert(world != nil, "ECS is nil")
-	utils.Assert(playerFOV != nil, "Player FOV is nil")
-	utils.Assert(mapWidth > 0, "Map width is not positive")
-
-	// Get all entities with Position and Renderable components
-	entityIDs := world.GetEntitiesWithComponents(components.CPosition, components.CRenderable)
-
-	// Create a map to cache render orders
-	renderOrderCache := make(map[ecs.EntityID]renderOrder, len(entityIDs))
-
-	// Filter entities by visibility and cache their render orders
-	visibleEntities := make([]ecs.EntityID, 0, len(entityIDs))
-	for _, id := range entityIDs {
-		// Use safe accessor - no error handling needed!
-		pos := world.GetPositionSafe(id)
-
-		// Only process entities that actually have positions
-		if world.HasPositionSafe(id) && playerFOV.IsVisible(pos, mapWidth) {
-			visibleEntities = append(visibleEntities, id)
-			renderOrderCache[id] = RenderOrder(world, id)
-		}
-	}
-
-	// Group entities by render order for efficient rendering
-	orderBuckets := make(map[renderOrder][]ecs.EntityID)
-	for _, id := range visibleEntities {
-		ro := renderOrderCache[id]
-		orderBuckets[ro] = append(orderBuckets[ro], id)
-	}
-
-	// Define render order priorities (lowest to highest)
-	priorities := []renderOrder{RONone, ROCorpse, ROItem, ROActor}
-
-	// Render entities in priority order
-	for _, priority := range priorities {
-		if bucket, ok := orderBuckets[priority]; ok {
-			for _, id := range bucket {
-				// Use safe accessor - no error handling needed!
-				pos := world.GetPositionSafe(id)
-				drawEntity(world, pos, id, md.grid)
 			}
 		}
 	}

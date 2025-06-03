@@ -15,15 +15,15 @@ type PickupAction struct {
 	ItemID   ecs.EntityID
 }
 
-func (a PickupAction) Execute(g *Game) error {
+func (a PickupAction) Execute(g *Game) (cost uint, err error) {
 	// Check if entity has inventory
 	if !g.ecs.HasInventorySafe(a.EntityID) {
-		return fmt.Errorf("entity %d has no inventory", a.EntityID)
+		return 0, fmt.Errorf("entity %d has no inventory", a.EntityID)
 	}
 
 	// Check if item exists and has ItemPickup component
 	if !g.ecs.EntityExists(a.ItemID) || !g.ecs.HasItemPickupSafe(a.ItemID) {
-		return fmt.Errorf("item %d does not exist or is not pickupable", a.ItemID)
+		return 0, fmt.Errorf("item %d does not exist or is not pickupable", a.ItemID)
 	}
 
 	// Get components
@@ -35,13 +35,6 @@ func (a PickupAction) Execute(g *Game) error {
 	if inventory.AddItem(pickup.Item, pickup.Quantity) {
 		// Update inventory component
 		g.ecs.AddComponent(a.EntityID, components.CInventory, inventory)
-
-		// // Remove item from world
-		// g.ecs.RemoveEntity(a.ItemID)
-
-		// // Remove from spatial grid
-		// itemPos := g.ecs.GetPositionSafe(a.ItemID)
-		// g.spatialGrid.Remove(a.ItemID, itemPos)
 
 		// Grab position before we delete the entity
 		itemPos := g.ecs.GetPositionSafe(a.ItemID)
@@ -61,18 +54,14 @@ func (a PickupAction) Execute(g *Game) error {
 		}
 
 		logrus.Debugf("%s picked up %s (quantity: %d)", entityName, pickup.Item.Name, pickup.Quantity)
-		return nil
+		return 100, nil // Standard action cost
 	}
 
 	// Inventory full
 	if a.EntityID == g.PlayerID {
 		g.log.AddMessagef(ui.ColorStatusBad, "Your inventory is full!")
 	}
-	return fmt.Errorf("inventory full")
-}
-
-func (a PickupAction) GetCost() int {
-	return 100 // Standard action cost
+	return 0, fmt.Errorf("inventory full") // No cost if inventory is full and pickup fails
 }
 
 // DropAction represents an action to drop an item
@@ -294,19 +283,6 @@ func (a EquipAction) Execute(g *Game) error {
 				ItemName: oldItem.Name,
 				Quantity: 1,
 			}
-
-			// Add old item back to equipment temporarily
-			// equipment.EquipItem(*oldItem)
-			// g.ecs.AddComponent(a.EntityID, components.CEquipment, equipment)
-
-			// // Execute drop action
-			// if err := dropAction.Execute(g); err != nil {
-			// 	return fmt.Errorf("failed to drop old item: %w", err)
-			// }
-
-			// // Re-equip new item
-			// equipment = g.ecs.GetEquipmentSafe(a.EntityID)
-			// equipment.EquipItem(itemToEquip)
 
 			// Inventory is full – just drop the old item directly
 			if err := dropAction.Execute(g); err != nil {

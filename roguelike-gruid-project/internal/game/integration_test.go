@@ -190,7 +190,7 @@ func TestInventoryActions(t *testing.T) {
 	// Create a test item
 	items := CreateBasicItems()
 	potion := items["Health Potion"]
-	
+
 	// Spawn item near player
 	itemID := game.SpawnItem(potion, 1, playerPos)
 
@@ -200,7 +200,7 @@ func TestInventoryActions(t *testing.T) {
 
 	// Test pickup action
 	pickupAction := PickupAction{EntityID: playerID, ItemID: itemID}
-	err := pickupAction.Execute(game)
+	_, err := pickupAction.Execute(game)
 	if err != nil {
 		t.Errorf("Pickup action failed: %v", err)
 	}
@@ -236,7 +236,7 @@ func TestCombatWithExperience(t *testing.T) {
 	game.InitLevel()
 
 	playerID := game.PlayerID
-	
+
 	// Spawn a monster
 	monsterPos := game.GetPlayerPosition().Add(gruid.Point{X: 1, Y: 0})
 	game.SpawnMonster(monsterPos)

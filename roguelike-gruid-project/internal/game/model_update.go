@@ -219,6 +219,8 @@ func (md *Model) screenModeAction(action playerAction) (again bool, effect gruid
 			md.fullMessageScreen.ScrollUp(md.game.MessageLog(), 1)
 		case modeInventory:
 			md.inventoryScreen.ScrollUp()
+		case modeCharacterSheet:
+			md.characterScreen.ScrollUp(1)
 		}
 		return true, effect, nil
 
@@ -229,6 +231,8 @@ func (md *Model) screenModeAction(action playerAction) (again bool, effect gruid
 		case modeInventory:
 			inventory := md.game.ecs.GetInventorySafe(md.game.PlayerID)
 			md.inventoryScreen.ScrollDown(len(inventory.Items))
+		case modeCharacterSheet:
+			md.characterScreen.ScrollDown(1, &gameDataAdapter{md.game})
 		}
 		return true, effect, nil
 

@@ -25,9 +25,9 @@ func NewMessagePanel() *MessagePanel {
 		"Messages",
 		true,
 	)
-	
+
 	return &MessagePanel{
-		Panel:       panel,
+		Panel:        panel,
 		scrollOffset: 0,
 		maxMessages:  100, // Keep last 100 messages
 	}
@@ -38,38 +38,35 @@ func (mp *MessagePanel) Render(grid gruid.Grid, messageLog *log.MessageLog) {
 	// Clear and draw border
 	mp.Clear(grid)
 	mp.DrawBorder(grid)
-	
+
 	// Get content area
 	contentX, contentY, contentWidth, contentHeight := mp.GetContentArea()
-	
+
 	if messageLog == nil || len(messageLog.Messages) == 0 {
 		// Show "No messages" if empty
 		style := gruid.Style{Fg: ColorUIText, Bg: ColorUIBackground}
 		mp.drawTextAt(grid, "No messages yet...", contentX, contentY, style)
 		return
 	}
-	
+
 	// Get wrapped message lines
 	wrappedLines := mp.getWrappedMessageLines(messageLog, contentWidth)
-	
+
 	// Calculate which lines to display based on scroll offset
 	totalLines := len(wrappedLines)
-	startLine := totalLines - contentHeight - mp.scrollOffset
-	if startLine < 0 {
-		startLine = 0
-	}
-	
+	startLine := max(totalLines-contentHeight-mp.scrollOffset, 0)
+
 	// Draw messages from bottom up
 	currentY := contentY + contentHeight - 1
 	for i := startLine + contentHeight - 1; i >= startLine && currentY >= contentY; i-- {
 		if i < len(wrappedLines) {
 			line := wrappedLines[i]
-			mp.drawTextAt(grid, line.Text, contentX, currentY, 
+			mp.drawTextAt(grid, line.Text, contentX, currentY,
 				gruid.Style{Fg: line.Color, Bg: ColorUIBackground})
 		}
 		currentY--
 	}
-	
+
 	// Draw scroll indicator if not at bottom
 	if mp.scrollOffset > 0 {
 		mp.drawScrollIndicator(grid, contentX+contentWidth-1, contentY)
@@ -85,7 +82,7 @@ type MessageLine struct {
 // getWrappedMessageLines converts messages to wrapped lines for display
 func (mp *MessagePanel) getWrappedMessageLines(messageLog *log.MessageLog, width int) []MessageLine {
 	var lines []MessageLine
-	
+
 	// Process messages in order (oldest first)
 	for _, msg := range messageLog.Messages {
 		wrappedText := mp.wrapMessageText(msg.Text, width)
@@ -96,7 +93,7 @@ func (mp *MessagePanel) getWrappedMessageLines(messageLog *log.MessageLog, width
 			})
 		}
 	}
-	
+
 	return lines
 }
 
@@ -105,20 +102,20 @@ func (mp *MessagePanel) wrapMessageText(text string, width int) []string {
 	if width <= 0 {
 		return []string{}
 	}
-	
+
 	// Handle empty text
 	if strings.TrimSpace(text) == "" {
 		return []string{""}
 	}
-	
+
 	words := strings.Fields(text)
 	if len(words) == 0 {
 		return []string{""}
 	}
-	
+
 	var lines []string
 	var currentLine strings.Builder
-	
+
 	for _, word := range words {
 		// Check if adding this word would exceed width
 		proposedLength := currentLine.Len()
@@ -126,25 +123,25 @@ func (mp *MessagePanel) wrapMessageText(text string, width int) []string {
 			proposedLength++ // for space
 		}
 		proposedLength += len(word)
-		
+
 		if proposedLength > width && currentLine.Len() > 0 {
 			// Start new line
 			lines = append(lines, currentLine.String())
 			currentLine.Reset()
 		}
-		
+
 		// Add word to current line
 		if currentLine.Len() > 0 {
 			currentLine.WriteString(" ")
 		}
 		currentLine.WriteString(word)
 	}
-	
+
 	// Add final line
 	if currentLine.Len() > 0 {
 		lines = append(lines, currentLine.String())
 	}
-	
+
 	return lines
 }
 
@@ -173,10 +170,10 @@ func (mp *MessagePanel) ScrollUp(messageLog *log.MessageLog) {
 	if messageLog == nil {
 		return
 	}
-	
+
 	_, _, contentWidth, contentHeight := mp.GetContentArea()
 	wrappedLines := mp.getWrappedMessageLines(messageLog, contentWidth)
-	
+
 	maxScroll := len(wrappedLines) - contentHeight
 	if maxScroll > 0 {
 		mp.scrollOffset++

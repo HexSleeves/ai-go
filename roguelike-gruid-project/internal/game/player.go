@@ -267,12 +267,6 @@ func (md *Model) handleLoadAction() (again bool, eff gruid.Effect, err error) {
 	return true, eff, nil // Don't consume turn
 }
 
-// handleCharacterSheetAction displays character information
-func (md *Model) handleCharacterSheetAction() (again bool, eff gruid.Effect, err error) {
-	md.mode = modeCharacterSheet
-	return true, eff, nil // Don't consume turn
-}
-
 // handleHelpAction displays help information
 func (md *Model) handleHelpAction() (again bool, eff gruid.Effect, err error) {
 	g := md.game
@@ -302,6 +296,12 @@ func (md *Model) handleHelpAction() (again bool, eff gruid.Effect, err error) {
 	g.log.AddMessagef(ui.ColorStatusGood, "Page Down - Scroll messages down")
 	g.log.AddMessagef(ui.ColorStatusGood, "M - Jump to latest messages")
 
+	return true, eff, nil // Don't consume turn
+}
+
+// handleCharacterSheetAction displays character information
+func (md *Model) handleCharacterSheetAction() (again bool, eff gruid.Effect, err error) {
+	md.mode = modeCharacterSheet
 	return true, eff, nil // Don't consume turn
 }
 

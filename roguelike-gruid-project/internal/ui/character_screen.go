@@ -11,7 +11,11 @@ import (
 // CharacterScreen handles the full-screen character information display
 type CharacterScreen struct {
 	*Panel
+	scrollOffset int
 }
+
+// DrawableElement is a function that draws a part of the character screen.
+type DrawableElement func(cs *CharacterScreen, grid gruid.Grid, drawX, drawY int)
 
 // NewCharacterScreen creates a new character screen
 func NewCharacterScreen() *CharacterScreen {
@@ -22,285 +26,499 @@ func NewCharacterScreen() *CharacterScreen {
 		"Character Sheet",
 		true,
 	)
-	
-	return &CharacterScreen{Panel: panel}
+
+	return &CharacterScreen{
+		Panel:        panel,
+		scrollOffset: 0,
+	}
+}
+
+// generateDrawableElements collects all drawing operations for the character sheet.
+func (cs *CharacterScreen) generateDrawableElements(gameData GameData, contentWidth int) []DrawableElement {
+	var elements []DrawableElement
+
+	playerID := gameData.GetPlayerID()
+	if !gameData.ECS().EntityExists(playerID) {
+		return elements
+	}
+
+	cs.appendBasicInfoElements(&elements, gameData.ECS(), playerID, contentWidth)
+	cs.drawSpacer(&elements)
+
+	cs.appendAttributesElements(&elements, gameData.ECS(), playerID, contentWidth)
+	cs.drawSpacer(&elements)
+
+	cs.appendCombatStatsElements(&elements, gameData.ECS(), playerID, contentWidth)
+	cs.drawSpacer(&elements)
+
+	cs.appendEquipmentElements(&elements, gameData.ECS(), playerID, contentWidth)
+	cs.drawSpacer(&elements)
+
+	cs.appendSkillsElements(&elements, gameData.ECS(), playerID, contentWidth)
+	cs.drawSpacer(&elements)
+
+	cs.appendStatusEffectsElements(&elements, gameData.ECS(), playerID, contentWidth)
+	cs.drawSpacers(&elements, 2)
+
+	return elements
 }
 
 // Render draws the character screen with detailed player information
 func (cs *CharacterScreen) Render(grid gruid.Grid, gameData GameData) {
-	// Clear and draw border
 	cs.Clear(grid)
 	cs.DrawBorder(grid)
-	
-	// Get content area
-	contentX, contentY, contentWidth, _ := cs.GetContentArea()
-	
-	playerID := gameData.GetPlayerID()
-	if !gameData.ECS().EntityExists(playerID) {
-		return
+
+	contentX, contentY, contentWidth, contentHeight := cs.GetContentArea()
+
+	drawableElements := cs.generateDrawableElements(gameData, contentWidth)
+	totalContentLines := len(drawableElements)
+	displayHeight := contentHeight
+
+	// Clamp scrollOffset
+	if totalContentLines <= displayHeight {
+		cs.scrollOffset = 0
+	} else {
+		maxScroll := totalContentLines - displayHeight
+		if cs.scrollOffset > maxScroll {
+			cs.scrollOffset = maxScroll
+		}
+		if cs.scrollOffset < 0 {
+			cs.scrollOffset = 0
+		}
 	}
-	
-	currentY := contentY
-	
-	// Character name and basic info
-	currentY = cs.drawBasicInfo(grid, gameData.ECS(), playerID, contentX, currentY, contentWidth)
-	currentY++ // Add spacing
-	
-	// Attributes section
-	currentY = cs.drawAttributes(grid, gameData.ECS(), playerID, contentX, currentY, contentWidth)
-	currentY++ // Add spacing
-	
-	// Combat statistics
-	currentY = cs.drawCombatStats(grid, gameData.ECS(), playerID, contentX, currentY, contentWidth)
-	currentY++ // Add spacing
-	
-	// Equipment section
-	currentY = cs.drawEquipment(grid, gameData.ECS(), playerID, contentX, currentY, contentWidth)
-	currentY++ // Add spacing
-	
-	// Skills section
-	currentY = cs.drawSkills(grid, gameData.ECS(), playerID, contentX, currentY, contentWidth)
-	currentY++ // Add spacing
-	
-	// Status effects
-	currentY = cs.drawStatusEffects(grid, gameData.ECS(), playerID, contentX, currentY, contentWidth)
-	
-	// Instructions at bottom
+
+	// Draw visible elements
+	for i := 0; i < displayHeight; i++ {
+		contentLineIndex := cs.scrollOffset + i
+		if contentLineIndex >= 0 && contentLineIndex < totalContentLines {
+			yOnScreen := contentY + i
+			element := drawableElements[contentLineIndex]
+			element(cs, grid, contentX, yOnScreen)
+		}
+	}
+
+	cs.drawScrollIndicators(grid, contentX, contentY, contentWidth, displayHeight, cs.scrollOffset, totalContentLines)
 	cs.drawInstructions(grid)
 }
 
-// drawBasicInfo renders character name, level, and experience
-func (cs *CharacterScreen) drawBasicInfo(grid gruid.Grid, ecs *ecs.ECS, playerID ecs.EntityID, x, y, width int) int {
-	// Character name (placeholder - using "Player" for now)
-	cs.drawLine(grid, "Name: Player", x, y, ColorUITitle)
-	y++
-	
+func (cs *CharacterScreen) drawSpacer(elements *[]DrawableElement) {
+	*elements = append(*elements, func(cs *CharacterScreen, grid gruid.Grid, drawX, drawY int) {}) // Spacing
+}
+
+func (cs *CharacterScreen) drawSpacers(elements *[]DrawableElement, numSpacers int) {
+	for i := 0; i < numSpacers; i++ {
+		cs.drawSpacer(elements)
+	}
+}
+
+// appendBasicInfoElements appends drawing functions for basic info to the elements slice
+func (cs *CharacterScreen) appendBasicInfoElements(elements *[]DrawableElement, ecs *ecs.ECS, playerID ecs.EntityID, contentWidth int) {
+	// Character name
+	nameText := "Name: Player" // Placeholder
+	nameColor := ColorUITitle
+	*elements = append(*elements, func(cs *CharacterScreen, grid gruid.Grid, drawX, drawY int) {
+		cs.drawText(grid, nameText, drawX, drawY, nameColor)
+	})
+
 	// Level and experience
 	if ecs.HasExperienceSafe(playerID) {
 		exp := ecs.GetExperienceSafe(playerID)
-		cs.drawLine(grid, fmt.Sprintf("Level: %d", exp.Level), x, y, ColorUIText)
-		y++
-		
-		cs.drawLine(grid, fmt.Sprintf("Experience: %d / %d", exp.CurrentXP, exp.XPToNextLevel), x, y, ColorUIText)
-		y++
-		
-		// XP progress bar
-		barWidth := width - 15
+		levelText := fmt.Sprintf("Level: %d", exp.Level)
+		textColor := ColorUIText
+		*elements = append(*elements, func(cs *CharacterScreen, grid gruid.Grid, drawX, drawY int) {
+			cs.drawText(grid, levelText, drawX, drawY, textColor)
+		})
+
+		expText := fmt.Sprintf("Experience: %d / %d", exp.CurrentXP, exp.XPToNextLevel)
+		*elements = append(*elements, func(cs *CharacterScreen, grid gruid.Grid, drawX, drawY int) {
+			cs.drawText(grid, expText, drawX, drawY, textColor)
+		})
+
+		barWidth := contentWidth - 15 // Adjusted from original x + 13 relative positioning
 		if barWidth > 0 {
-			cs.drawText(grid, "XP Progress: ", x, y, ColorUIText)
-			cs.DrawProgressBar(grid, x+13, y, barWidth, exp.CurrentXP, exp.XPToNextLevel,
-				gruid.Style{Fg: ColorStatusGood, Bg: ColorUIBackground})
+			xpProgressText := "XP Progress: "
+			currentXP := exp.CurrentXP
+			xpToNext := exp.XPToNextLevel
+			barStyle := gruid.Style{Fg: ColorStatusGood, Bg: ColorUIBackground}
+			*elements = append(*elements, func(cs *CharacterScreen, grid gruid.Grid, drawX, drawY int) {
+				cs.drawText(grid, xpProgressText, drawX, drawY, textColor)
+				cs.DrawProgressBar(grid, drawX+13, drawY, barWidth, currentXP, xpToNext, barStyle)
+			})
 		}
-		y++
-		
-		cs.drawLine(grid, fmt.Sprintf("Total XP: %d", exp.TotalXP), x, y, ColorUIText)
-		y++
-		
+
+		totalXPText := fmt.Sprintf("Total XP: %d", exp.TotalXP)
+		*elements = append(*elements, func(cs *CharacterScreen, grid gruid.Grid, drawX, drawY int) {
+			cs.drawText(grid, totalXPText, drawX, drawY, textColor)
+		})
+
 		if exp.SkillPoints > 0 || exp.AttributePoints > 0 {
-			cs.drawLine(grid, fmt.Sprintf("Skill Points: %d | Attribute Points: %d", 
-				exp.SkillPoints, exp.AttributePoints), x, y, ColorStatusGood)
-			y++
+			pointsText := fmt.Sprintf("Skill Points: %d | Attribute Points: %d", exp.SkillPoints, exp.AttributePoints)
+			pointsColor := ColorStatusGood
+			*elements = append(*elements, func(cs *CharacterScreen, grid gruid.Grid, drawX, drawY int) {
+				cs.drawText(grid, pointsText, drawX, drawY, pointsColor)
+			})
 		}
 	}
-	
+
 	// Health, Mana, Stamina
 	if ecs.HasHealthSafe(playerID) {
 		health := ecs.GetHealthSafe(playerID)
-		cs.drawLine(grid, fmt.Sprintf("Health: %d / %d", health.CurrentHP, health.MaxHP), x, y, ColorUIText)
-		y++
+		healthText := fmt.Sprintf("Health: %d / %d", health.CurrentHP, health.MaxHP)
+		textColor := ColorUIText
+		*elements = append(*elements, func(cs *CharacterScreen, grid gruid.Grid, drawX, drawY int) {
+			cs.drawText(grid, healthText, drawX, drawY, textColor)
+		})
 	}
-	
+
 	if ecs.HasManaSafe(playerID) {
 		mana := ecs.GetManaSafe(playerID)
-		cs.drawLine(grid, fmt.Sprintf("Mana: %d / %d", mana.CurrentMP, mana.MaxMP), x, y, ColorUIText)
-		y++
+		manaText := fmt.Sprintf("Mana: %d / %d", mana.CurrentMP, mana.MaxMP)
+		textColor := ColorUIText
+		*elements = append(*elements, func(cs *CharacterScreen, grid gruid.Grid, drawX, drawY int) {
+			cs.drawText(grid, manaText, drawX, drawY, textColor)
+		})
 	}
-	
+
 	if ecs.HasStaminaSafe(playerID) {
 		stamina := ecs.GetStaminaSafe(playerID)
-		cs.drawLine(grid, fmt.Sprintf("Stamina: %d / %d", stamina.CurrentSP, stamina.MaxSP), x, y, ColorUIText)
-		y++
+		staminaText := fmt.Sprintf("Stamina: %d / %d", stamina.CurrentSP, stamina.MaxSP)
+		textColor := ColorUIText
+		*elements = append(*elements, func(cs *CharacterScreen, grid gruid.Grid, drawX, drawY int) {
+			cs.drawText(grid, staminaText, drawX, drawY, textColor)
+		})
 	}
-	
-	return y
 }
 
-// drawAttributes renders character attributes
-func (cs *CharacterScreen) drawAttributes(grid gruid.Grid, ecs *ecs.ECS, playerID ecs.EntityID, x, y, width int) int {
+// appendAttributesElements appends drawing functions for attributes
+func (cs *CharacterScreen) appendAttributesElements(elements *[]DrawableElement, ecs *ecs.ECS, playerID ecs.EntityID, contentWidth int) {
 	if !ecs.HasStatsSafe(playerID) {
-		return y
+		return
 	}
-	
 	stats := ecs.GetStatsSafe(playerID)
-	
-	cs.drawLine(grid, "=== ATTRIBUTES ===", x, y, ColorUITitle)
-	y++
-	
-	cs.drawLine(grid, fmt.Sprintf("Strength:     %2d    Dexterity:    %2d", 
-		stats.Strength, stats.Dexterity), x, y, ColorUIText)
-	y++
-	
-	cs.drawLine(grid, fmt.Sprintf("Constitution: %2d    Intelligence: %2d", 
-		stats.Constitution, stats.Intelligence), x, y, ColorUIText)
-	y++
-	
-	cs.drawLine(grid, fmt.Sprintf("Wisdom:       %2d    Charisma:     %2d", 
-		stats.Wisdom, stats.Charisma), x, y, ColorUIText)
-	y++
-	
-	return y
+	titleText := "=== ATTRIBUTES ==="
+	titleColor := ColorUITitle
+	*elements = append(*elements, func(cs *CharacterScreen, grid gruid.Grid, drawX, drawY int) {
+		cs.drawText(grid, titleText, drawX, drawY, titleColor)
+	})
+
+	line1Text := fmt.Sprintf("Strength:     %2d    Dexterity:    %2d", stats.Strength, stats.Dexterity)
+	textColor := ColorUIText
+	*elements = append(*elements, func(cs *CharacterScreen, grid gruid.Grid, drawX, drawY int) {
+		cs.drawText(grid, line1Text, drawX, drawY, textColor)
+	})
+
+	line2Text := fmt.Sprintf("Constitution: %2d    Intelligence: %2d", stats.Constitution, stats.Intelligence)
+	*elements = append(*elements, func(cs *CharacterScreen, grid gruid.Grid, drawX, drawY int) {
+		cs.drawText(grid, line2Text, drawX, drawY, textColor)
+	})
+
+	line3Text := fmt.Sprintf("Wisdom:       %2d    Charisma:     %2d", stats.Wisdom, stats.Charisma)
+	*elements = append(*elements, func(cs *CharacterScreen, grid gruid.Grid, drawX, drawY int) {
+		cs.drawText(grid, line3Text, drawX, drawY, textColor)
+	})
 }
 
-// drawCombatStats renders combat-related statistics
-func (cs *CharacterScreen) drawCombatStats(grid gruid.Grid, ecs *ecs.ECS, playerID ecs.EntityID, x, y, width int) int {
+// appendCombatStatsElements appends drawing functions for combat stats
+func (cs *CharacterScreen) appendCombatStatsElements(elements *[]DrawableElement, ecs *ecs.ECS, playerID ecs.EntityID, contentWidth int) {
 	if !ecs.HasCombatSafe(playerID) {
-		return y
+		return
 	}
-	
 	combat := ecs.GetCombatSafe(playerID)
-	
-	cs.drawLine(grid, "=== COMBAT STATS ===", x, y, ColorUITitle)
-	y++
-	
-	cs.drawLine(grid, fmt.Sprintf("Attack Power: %2d    Defense:      %2d", 
-		combat.AttackPower, combat.Defense), x, y, ColorUIText)
-	y++
-	
-	cs.drawLine(grid, fmt.Sprintf("Accuracy:     %2d%%   Dodge Chance: %2d%%", 
-		combat.Accuracy, combat.DodgeChance), x, y, ColorUIText)
-	y++
-	
-	cs.drawLine(grid, fmt.Sprintf("Critical:     %2d%%   Crit Damage:  %2d%%", 
-		combat.CriticalChance, combat.CriticalDamage), x, y, ColorUIText)
-	y++
-	
-	return y
+	titleText := "=== COMBAT STATS ==="
+	titleColor := ColorUITitle
+	*elements = append(*elements, func(cs *CharacterScreen, grid gruid.Grid, drawX, drawY int) {
+		cs.drawText(grid, titleText, drawX, drawY, titleColor)
+	})
+
+	line1Text := fmt.Sprintf("Attack Power: %2d    Defense:      %2d", combat.AttackPower, combat.Defense)
+	textColor := ColorUIText
+	*elements = append(*elements, func(cs *CharacterScreen, grid gruid.Grid, drawX, drawY int) {
+		cs.drawText(grid, line1Text, drawX, drawY, textColor)
+	})
+
+	line2Text := fmt.Sprintf("Accuracy:     %2d%%   Dodge Chance: %2d%%", combat.Accuracy, combat.DodgeChance)
+	*elements = append(*elements, func(cs *CharacterScreen, grid gruid.Grid, drawX, drawY int) {
+		cs.drawText(grid, line2Text, drawX, drawY, textColor)
+	})
+
+	line3Text := fmt.Sprintf("Critical:     %2d%%   Crit Damage:  %2d%%", combat.CriticalChance, combat.CriticalDamage)
+	*elements = append(*elements, func(cs *CharacterScreen, grid gruid.Grid, drawX, drawY int) {
+		cs.drawText(grid, line3Text, drawX, drawY, textColor)
+	})
 }
 
-// drawEquipment renders equipped items with detailed stats
-func (cs *CharacterScreen) drawEquipment(grid gruid.Grid, ecs *ecs.ECS, playerID ecs.EntityID, x, y, width int) int {
+// appendEquipmentElements appends drawing functions for equipment
+func (cs *CharacterScreen) appendEquipmentElements(elements *[]DrawableElement, ecs *ecs.ECS, playerID ecs.EntityID, contentWidth int) {
 	if !ecs.HasEquipmentSafe(playerID) {
-		return y
+		return
 	}
-	
 	equipment := ecs.GetEquipmentSafe(playerID)
-	
-	cs.drawLine(grid, "=== EQUIPMENT ===", x, y, ColorUITitle)
-	y++
-	
+	titleText := "=== EQUIPMENT ==="
+	titleColor := ColorUITitle
+	*elements = append(*elements, func(cs *CharacterScreen, grid gruid.Grid, drawX, drawY int) {
+		cs.drawText(grid, titleText, drawX, drawY, titleColor)
+	})
+
+	textColor := ColorUIText
+	highlightColor := ColorUIHighlight
+
 	// Weapon
 	if equipment.Weapon != nil {
-		cs.drawLine(grid, fmt.Sprintf("Weapon: %s", equipment.Weapon.Name), x, y, ColorUIText)
-		y++
-		cs.drawLine(grid, fmt.Sprintf("  %s", equipment.Weapon.Description), x, y, ColorUIHighlight)
-		y++
+		weaponName := fmt.Sprintf("Weapon: %s", equipment.Weapon.Name)
+		*elements = append(*elements, func(cs *CharacterScreen, grid gruid.Grid, drawX, drawY int) {
+			cs.drawText(grid, weaponName, drawX, drawY, textColor)
+		})
+		weaponDesc := fmt.Sprintf("  %s", equipment.Weapon.Description)
+		*elements = append(*elements, func(cs *CharacterScreen, grid gruid.Grid, drawX, drawY int) {
+			cs.drawText(grid, weaponDesc, drawX, drawY, highlightColor)
+		})
 	} else {
-		cs.drawLine(grid, "Weapon: None", x, y, ColorUIText)
-		y++
+		weaponNone := "Weapon: None"
+		*elements = append(*elements, func(cs *CharacterScreen, grid gruid.Grid, drawX, drawY int) {
+			cs.drawText(grid, weaponNone, drawX, drawY, textColor)
+		})
 	}
-	
+
 	// Armor
 	if equipment.Armor != nil {
-		cs.drawLine(grid, fmt.Sprintf("Armor:  %s", equipment.Armor.Name), x, y, ColorUIText)
-		y++
-		cs.drawLine(grid, fmt.Sprintf("  %s", equipment.Armor.Description), x, y, ColorUIHighlight)
-		y++
+		armorName := fmt.Sprintf("Armor:  %s", equipment.Armor.Name)
+		*elements = append(*elements, func(cs *CharacterScreen, grid gruid.Grid, drawX, drawY int) {
+			cs.drawText(grid, armorName, drawX, drawY, textColor)
+		})
+		armorDesc := fmt.Sprintf("  %s", equipment.Armor.Description)
+		*elements = append(*elements, func(cs *CharacterScreen, grid gruid.Grid, drawX, drawY int) {
+			cs.drawText(grid, armorDesc, drawX, drawY, highlightColor)
+		})
 	} else {
-		cs.drawLine(grid, "Armor:  None", x, y, ColorUIText)
-		y++
+		armorNone := "Armor:  None"
+		*elements = append(*elements, func(cs *CharacterScreen, grid gruid.Grid, drawX, drawY int) {
+			cs.drawText(grid, armorNone, drawX, drawY, textColor)
+		})
 	}
-	
+
 	// Accessory
 	if equipment.Accessory != nil {
-		cs.drawLine(grid, fmt.Sprintf("Accessory: %s", equipment.Accessory.Name), x, y, ColorUIText)
-		y++
-		cs.drawLine(grid, fmt.Sprintf("  %s", equipment.Accessory.Description), x, y, ColorUIHighlight)
-		y++
+		accessoryName := fmt.Sprintf("Accessory: %s", equipment.Accessory.Name)
+		*elements = append(*elements, func(cs *CharacterScreen, grid gruid.Grid, drawX, drawY int) {
+			cs.drawText(grid, accessoryName, drawX, drawY, textColor)
+		})
+		accessoryDesc := fmt.Sprintf("  %s", equipment.Accessory.Description)
+		*elements = append(*elements, func(cs *CharacterScreen, grid gruid.Grid, drawX, drawY int) {
+			cs.drawText(grid, accessoryDesc, drawX, drawY, highlightColor)
+		})
 	} else {
-		cs.drawLine(grid, "Accessory: None", x, y, ColorUIText)
-		y++
+		accessoryNone := "Accessory: None"
+		*elements = append(*elements, func(cs *CharacterScreen, grid gruid.Grid, drawX, drawY int) {
+			cs.drawText(grid, accessoryNone, drawX, drawY, textColor)
+		})
 	}
-	
-	return y
 }
 
-// drawSkills renders character skills
-func (cs *CharacterScreen) drawSkills(grid gruid.Grid, ecs *ecs.ECS, playerID ecs.EntityID, x, y, width int) int {
+// appendSkillsElements appends drawing functions for skills
+func (cs *CharacterScreen) appendSkillsElements(elements *[]DrawableElement, ecs *ecs.ECS, playerID ecs.EntityID, contentWidth int) {
 	if !ecs.HasSkillsSafe(playerID) {
-		return y
+		return
 	}
-	
 	skills := ecs.GetSkillsSafe(playerID)
-	
-	cs.drawLine(grid, "=== SKILLS ===", x, y, ColorUITitle)
-	y++
-	
+	titleText := "=== SKILLS ==="
+	titleColor := ColorUITitle
+	*elements = append(*elements, func(cs *CharacterScreen, grid gruid.Grid, drawX, drawY int) {
+		cs.drawText(grid, titleText, drawX, drawY, titleColor)
+	})
+
+	highlightColor := ColorUIHighlight
+	textColor := ColorUIText
+
 	// Combat skills
-	cs.drawLine(grid, "Combat:", x, y, ColorUIHighlight)
-	y++
-	cs.drawLine(grid, fmt.Sprintf("  Melee Weapons: %2d    Ranged Weapons: %2d    Defense: %2d", 
-		skills.MeleeWeapons, skills.RangedWeapons, skills.Defense), x, y, ColorUIText)
-	y++
-	
+	combatTitle := "Combat:"
+	*elements = append(*elements, func(cs *CharacterScreen, grid gruid.Grid, drawX, drawY int) {
+		cs.drawText(grid, combatTitle, drawX, drawY, highlightColor)
+	})
+	combatSkillsText := fmt.Sprintf("  Melee Weapons: %2d    Ranged Weapons: %2d    Defense: %2d",
+		skills.MeleeWeapons, skills.RangedWeapons, skills.Defense)
+	*elements = append(*elements, func(cs *CharacterScreen, grid gruid.Grid, drawX, drawY int) {
+		cs.drawText(grid, combatSkillsText, drawX, drawY, textColor)
+	})
+
 	// Magic skills
-	cs.drawLine(grid, "Magic:", x, y, ColorUIHighlight)
-	y++
-	cs.drawLine(grid, fmt.Sprintf("  Evocation: %2d    Conjuration: %2d    Enchantment: %2d    Divination: %2d", 
-		skills.Evocation, skills.Conjuration, skills.Enchantment, skills.Divination), x, y, ColorUIText)
-	y++
-	
+	magicTitle := "Magic:"
+	*elements = append(*elements, func(cs *CharacterScreen, grid gruid.Grid, drawX, drawY int) {
+		cs.drawText(grid, magicTitle, drawX, drawY, highlightColor)
+	})
+	magicSkillsText := fmt.Sprintf("  Evocation: %2d    Conjuration: %2d    Enchantment: %2d    Divination: %2d",
+		skills.Evocation, skills.Conjuration, skills.Enchantment, skills.Divination)
+	*elements = append(*elements, func(cs *CharacterScreen, grid gruid.Grid, drawX, drawY int) {
+		cs.drawText(grid, magicSkillsText, drawX, drawY, textColor)
+	})
+
 	// Utility skills
-	cs.drawLine(grid, "Utility:", x, y, ColorUIHighlight)
-	y++
-	cs.drawLine(grid, fmt.Sprintf("  Stealth: %2d    Lockpicking: %2d    Perception: %2d", 
-		skills.Stealth, skills.Lockpicking, skills.Perception), x, y, ColorUIText)
-	y++
-	cs.drawLine(grid, fmt.Sprintf("  Medicine: %2d   Crafting: %2d", 
-		skills.Medicine, skills.Crafting), x, y, ColorUIText)
-	y++
-	
-	return y
+	utilityTitle := "Utility:"
+	*elements = append(*elements, func(cs *CharacterScreen, grid gruid.Grid, drawX, drawY int) {
+		cs.drawText(grid, utilityTitle, drawX, drawY, highlightColor)
+	})
+	utilitySkills1Text := fmt.Sprintf("  Stealth: %2d    Lockpicking: %2d    Perception: %2d",
+		skills.Stealth, skills.Lockpicking, skills.Perception)
+	*elements = append(*elements, func(cs *CharacterScreen, grid gruid.Grid, drawX, drawY int) {
+		cs.drawText(grid, utilitySkills1Text, drawX, drawY, textColor)
+	})
+	utilitySkills2Text := fmt.Sprintf("  Medicine: %2d   Crafting: %2d",
+		skills.Medicine, skills.Crafting)
+	*elements = append(*elements, func(cs *CharacterScreen, grid gruid.Grid, drawX, drawY int) {
+		cs.drawText(grid, utilitySkills2Text, drawX, drawY, textColor)
+	})
 }
 
-// drawStatusEffects renders active status effects
-func (cs *CharacterScreen) drawStatusEffects(grid gruid.Grid, ecs *ecs.ECS, playerID ecs.EntityID, x, y, width int) int {
+// appendStatusEffectsElements appends drawing functions for status effects
+func (cs *CharacterScreen) appendStatusEffectsElements(elements *[]DrawableElement, ecs *ecs.ECS, playerID ecs.EntityID, contentWidth int) {
 	if !ecs.HasStatusEffectsSafe(playerID) {
-		return y
+		return
 	}
-	
+
 	statusEffects := ecs.GetStatusEffectsSafe(playerID)
-	
-	cs.drawLine(grid, "=== STATUS EFFECTS ===", x, y, ColorUITitle)
-	y++
-	
+	titleText := "=== STATUS EFFECTS ==="
+	titleColor := ColorUITitle
+	*elements = append(*elements, func(cs *CharacterScreen, grid gruid.Grid, drawX, drawY int) {
+		cs.drawText(grid, titleText, drawX, drawY, titleColor)
+	})
+
 	if len(statusEffects.Effects) == 0 {
-		cs.drawLine(grid, "None", x, y, ColorUIText)
-		y++
+		noneText := "None"
+		textColor := ColorUIText
+		*elements = append(*elements, func(cs *CharacterScreen, grid gruid.Grid, drawX, drawY int) {
+			cs.drawText(grid, noneText, drawX, drawY, textColor)
+		})
 	} else {
 		for _, effect := range statusEffects.Effects {
 			effectText := fmt.Sprintf("%s (%d turns)", effect.Name, effect.Duration)
-			cs.drawLine(grid, effectText, x, y, ColorStatusNeutral)
-			y++
+			effectColor := ColorStatusNeutral // Or derive from effect type
+			// Capture effectText and effectColor in the closure
+			currentEffectText := effectText
+			currentEffectColor := effectColor
+			*elements = append(*elements, func(cs *CharacterScreen, grid gruid.Grid, drawX, drawY int) {
+				cs.drawText(grid, currentEffectText, drawX, drawY, currentEffectColor)
+			})
 		}
 	}
-	
-	return y
+}
+
+// drawScrollIndicators shows scroll position and availability
+func (cs *CharacterScreen) drawScrollIndicators(grid gruid.Grid, x, y, width, displayHeight, scrollOffset, totalLines int) {
+	// Scroll up indicator
+	if scrollOffset > 0 {
+		indicator := "▲ more above"
+		// Draw at the top of the content area, possibly slightly offset
+		cs.drawText(grid, indicator, x+(width-len(indicator))/2, y, ColorUIHighlight)
+	}
+
+	// Scroll down indicator
+	if scrollOffset+displayHeight < totalLines {
+		indicator := "▼ more below"
+		// Draw at the bottom of the content area
+		cs.drawText(grid, indicator, x+(width-len(indicator))/2, y+displayHeight-1, ColorUIHighlight)
+	}
 }
 
 // drawInstructions renders control instructions at the bottom
 func (cs *CharacterScreen) drawInstructions(grid gruid.Grid) {
-	instructionY := cs.Y + cs.Height - 2
-	instructions := "Press [ESC] or [q] to close"
-	
+	instructionY := cs.Y + cs.Height - 2 // Positioned at the bottom of the panel
+	instructions := "↑↓/jk/PgUp/PgDn: Scroll | Home: Top | End: Bottom | [ESC]/q: Close"
+
 	// Center the instructions
 	startX := cs.X + (cs.Width-len(instructions))/2
+	if startX < cs.X+1 { // Ensure it's within panel bounds
+		startX = cs.X + 1
+	}
 	cs.drawText(grid, instructions, startX, instructionY, ColorUIHighlight)
 }
 
-// drawLine draws a single line of text
-func (cs *CharacterScreen) drawLine(grid gruid.Grid, text string, x, y int, color gruid.Color) {
-	cs.drawText(grid, text, x, y, color)
+// ScrollUp scrolls the content up (view moves towards the top of the sheet)
+func (cs *CharacterScreen) ScrollUp(lines int) {
+	cs.scrollOffset -= lines
+	if cs.scrollOffset < 0 {
+		cs.scrollOffset = 0
+	}
 }
+
+// ScrollDown scrolls the content down (view moves towards the bottom of the sheet)
+// It requires gameData to determine the actual maximum scroll extent dynamically.
+func (cs *CharacterScreen) ScrollDown(lines int, gameData GameData) {
+	cs.scrollOffset += lines // Tentatively update offset
+
+	// Determine current content dimensions for accurate clamping
+	_, _, contentWidth, contentHeight := cs.GetContentArea()
+	drawableElements := cs.generateDrawableElements(gameData, contentWidth)
+	totalContentLines := len(drawableElements)
+	displayHeight := contentHeight
+
+	maxScroll := 0
+	if totalContentLines > displayHeight { // Can only scroll if content is larger than display area
+		maxScroll = totalContentLines - displayHeight
+	}
+
+	if cs.scrollOffset > maxScroll {
+		cs.scrollOffset = maxScroll
+	}
+	// Safety clamp: ensure scrollOffset is not negative, though Render usually handles this too.
+	if cs.scrollOffset < 0 {
+		cs.scrollOffset = 0
+	}
+}
+
+// ScrollToTop scrolls to the top of the content
+func (cs *CharacterScreen) ScrollToTop() {
+	cs.scrollOffset = 0
+}
+
+// ScrollToBottom scrolls to the bottom of the content
+// It requires gameData to determine the actual maximum scroll extent dynamically.
+func (cs *CharacterScreen) ScrollToBottom(gameData GameData) {
+	// Determine current content dimensions for accurate clamping
+	_, _, contentWidth, contentHeight := cs.GetContentArea()
+	drawableElements := cs.generateDrawableElements(gameData, contentWidth)
+	totalContentLines := len(drawableElements)
+	displayHeight := contentHeight
+
+	maxScroll := 0
+	if totalContentLines > displayHeight { // Can only scroll if content is larger than display area
+		maxScroll = totalContentLines - displayHeight
+	}
+
+	if maxScroll < 0 {
+		maxScroll = 0
+	}
+	cs.scrollOffset = maxScroll
+}
+
+// GetScrollOffset returns the current vertical scroll offset.
+func (cs *CharacterScreen) GetScrollOffset() int {
+	return cs.scrollOffset
+}
+
+// IsAtTop returns true if the character screen is scrolled to the top.
+func (cs *CharacterScreen) IsAtTop() bool {
+	return cs.scrollOffset == 0
+}
+
+// IsAtBottom returns true if the character screen is scrolled to the bottom.
+// It requires gameData to determine the actual maximum scroll extent dynamically.
+func (cs *CharacterScreen) IsAtBottom(gameData GameData) bool {
+	_, _, contentWidth, contentHeight := cs.GetContentArea()
+	drawableElements := cs.generateDrawableElements(gameData, contentWidth)
+	totalContentLines := len(drawableElements)
+	displayHeight := contentHeight
+
+	maxScroll := 0
+	if totalContentLines > displayHeight {
+		maxScroll = totalContentLines - displayHeight
+	}
+
+	return cs.scrollOffset >= maxScroll // Use >= for robustness
+}
+
+// drawLine is a helper, can be removed if not used elsewhere or kept for potential direct drawing
+// func (cs *CharacterScreen) drawLine(grid gruid.Grid, text string, x, y int, color gruid.Color) {
+// 	cs.drawText(grid, text, x, y, color)
+// }
 
 // drawText draws text at the specified position
 func (cs *CharacterScreen) drawText(grid gruid.Grid, text string, x, y int, color gruid.Color) {
@@ -314,10 +532,4 @@ func (cs *CharacterScreen) drawText(grid gruid.Grid, text string, x, y int, colo
 			grid.Set(gruid.Point{X: x + i, Y: y}, gruid.Cell{Rune: r, Style: style})
 		}
 	}
-}
-
-// ResetSelection resets any selection state (placeholder for future use)
-func (cs *CharacterScreen) ResetSelection() {
-	// Character screen doesn't have selection state currently
-	// This method is here for consistency with other screens
 }
