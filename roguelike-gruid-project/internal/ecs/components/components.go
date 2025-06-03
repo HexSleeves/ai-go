@@ -78,8 +78,9 @@ type Position struct {
 
 // Renderable component represents how an entity is rendered
 type Renderable struct {
-	Glyph rune
-	Color gruid.Color
+	Glyph    rune
+	Color    gruid.Color
+	TileName string // Optional specific tile override for tile-based rendering
 }
 
 // Health component represents an entity's health points

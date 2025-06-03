@@ -32,6 +32,7 @@ const (
 	ActionScrollMessagesBottom
 	ActionFullMessageLog
 	ActionCloseScreen
+	ActionToggleTiles
 )
 
 type actionError int
@@ -110,6 +111,9 @@ func (md *Model) normalModeAction(playerAction playerAction) (again bool, eff gr
 
 	case ActionFullMessageLog:
 		return md.handleFullMessageLogAction()
+
+	case ActionToggleTiles:
+		return md.handleToggleTilesAction()
 
 	default:
 		logrus.Debugf("Unknown action: %v\n", playerAction)
@@ -288,6 +292,7 @@ func (md *Model) handleHelpAction() (again bool, eff gruid.Effect, err error) {
 	g.log.AddMessagef(ui.ColorStatusGood, "=== Game ===")
 	g.log.AddMessagef(ui.ColorStatusGood, "S - Save game")
 	g.log.AddMessagef(ui.ColorStatusGood, "L - Load game")
+	g.log.AddMessagef(ui.ColorStatusGood, "T - Toggle tile/ASCII rendering")
 	g.log.AddMessagef(ui.ColorStatusGood, "Q - Quit")
 	g.log.AddMessagef(ui.ColorStatusGood, "? - This help")
 	g.log.AddMessagef(ui.ColorStatusGood, "")
@@ -327,5 +332,26 @@ func (md *Model) handleScrollMessagesBottomAction() (again bool, eff gruid.Effec
 func (md *Model) handleFullMessageLogAction() (again bool, eff gruid.Effect, err error) {
 	md.mode = modeFullMessageLog
 	md.fullMessageScreen.ScrollToBottom()
+	return true, eff, nil // Don't consume turn
+}
+
+// handleToggleTilesAction toggles between tile-based and ASCII rendering
+func (md *Model) handleToggleTilesAction() (again bool, eff gruid.Effect, err error) {
+	g := md.game
+
+	// Toggle tile mode
+	if err := ui.ToggleTileMode(); err != nil {
+		g.log.AddMessagef(ui.ColorStatusBad, "Failed to toggle tile mode: %v", err)
+		logrus.Errorf("Toggle tile mode failed: %v", err)
+		return true, eff, nil // Don't consume turn
+	}
+
+	// Check current state and inform user
+	if ui.GetCurrentTileMode() {
+		g.log.AddMessagef(ui.ColorStatusGood, "Switched to tile-based rendering! (Restart required)")
+	} else {
+		g.log.AddMessagef(ui.ColorStatusGood, "Switched to ASCII rendering! (Restart required)")
+	}
+
 	return true, eff, nil // Don't consume turn
 }
