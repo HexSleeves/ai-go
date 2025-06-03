@@ -4,44 +4,44 @@ This directory contains the tile assets for the roguelike game. The game support
 
 ## Recommended Tileset: Kenney's Roguelike/RPG Pack
 
-The game is designed to work with **Kenney's Roguelike/RPG Pack**, which provides 1,700+ high-quality 16x16 pixel tiles.
+The game is designed to work with **Kenney's Roguelike/RPG Pack**, which provides 1,700+ high-quality 16x16 pixel tiles as a **single spritesheet**.
 
 ### Download Instructions
 
 1. **Visit the download page**: https://kenney.nl/assets/roguelike-rpg-pack
 2. **Download the pack** (it's completely free under CC0 license)
-3. **Extract the contents** to this directory
+3. **Extract the ZIP file**
+4. **Copy the main spritesheet** to this directory
+
+### Spritesheet Setup
+
+The game uses Kenney's **single spritesheet** rather than individual tile files. After downloading:
+
+1. Find the main spritesheet PNG file (usually named something like `roguelike_spritesheet.png`)
+2. Copy it to this directory as one of these names:
+   - `roguelike_spritesheet.png` (preferred)
+   - `spritesheet.png`
+   - `kenney_roguelike.png`
+   - `roguelike.png`
 
 ### Expected Directory Structure
 
-After downloading and extracting, your directory structure should look like:
+After setup, your directory should look like:
 
 ```
 assets/tiles/
-├── characters/
-│   ├── knight_m.png
-│   ├── knight_f.png
-│   └── ... (other character tiles)
-├── monsters/
-│   ├── orc.png
-│   ├── goblin.png
-│   ├── skeleton.png
-│   └── ... (other monster tiles)
-├── environment/
-│   ├── wall_mid.png
-│   ├── floor_1.png
-│   ├── door_closed.png
-│   └── ... (other environment tiles)
-├── items/
-│   ├── flask_red.png
-│   ├── scroll_01.png
-│   ├── weapon_sword.png
-│   └── ... (other item tiles)
-├── ui/
-│   └── ... (UI elements)
+├── roguelike_spritesheet.png  # Main Kenney spritesheet (16x16 tiles)
 └── fallback/
     └── ... (automatically generated fallback tiles)
 ```
+
+### Spritesheet Details
+
+- **Format**: Single PNG spritesheet
+- **Tile Size**: 16×16 pixels per sprite
+- **Layout**: Grid of sprites arranged in rows and columns
+- **Total Sprites**: 1,700+ individual tiles
+- **Coverage**: Characters, monsters, environment, items, UI elements
 
 ### Alternative Tilesets
 

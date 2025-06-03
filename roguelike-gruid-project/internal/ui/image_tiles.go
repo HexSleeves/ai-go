@@ -10,6 +10,7 @@ import (
 	"image/draw"
 	"image/png"
 	"os"
+	"path/filepath"
 	"sync"
 
 	"codeberg.org/anaseto/gruid"
@@ -23,6 +24,7 @@ type ImageTileManager struct {
 	tileCache     map[string]image.Image
 	coloredCache  map[string]map[gruid.Color]image.Image
 	tileMapping   *TileMapping
+	spriteAtlas   *KenneyRoguelikeAtlas // Sprite atlas for extracting tiles
 	config        *config.TileConfig
 	mutex         sync.RWMutex
 	fontFallback  sdl.TileManager // Fallback to font-based rendering
@@ -37,11 +39,37 @@ func NewImageTileManager(config *config.TileConfig, fontFallback sdl.TileManager
 		config:       config,
 		fontFallback: fontFallback,
 	}
-	
+
+	// Try to load sprite atlas
+	itm.loadSpriteAtlas()
+
 	// Pre-load common tiles
 	itm.preloadCommonTiles()
-	
+
 	return itm
+}
+
+// loadSpriteAtlas attempts to load the Kenney spritesheet
+func (itm *ImageTileManager) loadSpriteAtlas() {
+	spritesheetPath := filepath.Join(itm.config.TilesetPath, "roguelike_spritesheet.png")
+
+	// Try alternative common names for the spritesheet
+	alternativePaths := []string{
+		filepath.Join(itm.config.TilesetPath, "roguelike_spritesheet.png"),
+		filepath.Join(itm.config.TilesetPath, "spritesheet.png"),
+		filepath.Join(itm.config.TilesetPath, "kenney_roguelike.png"),
+		filepath.Join(itm.config.TilesetPath, "roguelike.png"),
+	}
+
+	for _, path := range alternativePaths {
+		if atlas, err := NewKenneyRoguelikeAtlas(path); err == nil {
+			itm.spriteAtlas = atlas
+			logrus.Infof("Loaded sprite atlas from: %s", path)
+			return
+		}
+	}
+
+	logrus.Warn("No sprite atlas found. Place Kenney's spritesheet as 'roguelike_spritesheet.png' in the tileset directory")
 }
 
 // GetImage implements sdl.TileManager.GetImage
@@ -89,7 +117,7 @@ func (itm *ImageTileManager) TileSize() gruid.Point {
 	}
 }
 
-// loadTile loads a tile image from disk, with caching
+// loadTile loads a tile image, preferring sprite atlas over individual files
 func (itm *ImageTileManager) loadTile(tilePath string) image.Image {
 	itm.mutex.RLock()
 	if img, exists := itm.tileCache[tilePath]; exists {
@@ -97,35 +125,95 @@ func (itm *ImageTileManager) loadTile(tilePath string) image.Image {
 		return img
 	}
 	itm.mutex.RUnlock()
-	
-	// Load image from file
+
+	var img image.Image
+
+	// Try to get tile from sprite atlas first
+	if itm.spriteAtlas != nil {
+		img = itm.getTileFromAtlas(tilePath)
+	}
+
+	// Fallback to individual file loading if atlas doesn't have the tile
+	if img == nil {
+		img = itm.loadTileFromFile(tilePath)
+	}
+
+	if img == nil {
+		return nil
+	}
+
+	// Scale image if necessary
+	scaledImg := itm.scaleImage(img)
+
+	// Cache the loaded tile
+	itm.mutex.Lock()
+	itm.tileCache[tilePath] = scaledImg
+
+	// Implement simple LRU eviction if cache is too large
+	if len(itm.tileCache) > itm.config.CacheSize {
+		itm.evictOldestTiles()
+	}
+	itm.mutex.Unlock()
+
+	return scaledImg
+}
+
+// getTileFromAtlas attempts to get a tile from the sprite atlas
+func (itm *ImageTileManager) getTileFromAtlas(tilePath string) image.Image {
+	// Map tile paths to sprite atlas coordinates
+	// This is a simplified mapping - you'd want a more comprehensive system
+	switch tilePath {
+	case "characters/knight_m.png", "characters/player.png":
+		return itm.spriteAtlas.GetPlayerSprite()
+	case "monsters/orc.png":
+		return itm.spriteAtlas.GetMonsterSprite("orc")
+	case "monsters/goblin.png":
+		return itm.spriteAtlas.GetMonsterSprite("goblin")
+	case "monsters/skeleton.png":
+		return itm.spriteAtlas.GetMonsterSprite("skeleton")
+	case "monsters/dragon.png":
+		return itm.spriteAtlas.GetMonsterSprite("dragon")
+	case "environment/wall_mid.png", "environment/wall.png":
+		return itm.spriteAtlas.GetEnvironmentSprite("wall")
+	case "environment/floor_1.png", "environment/floor.png":
+		return itm.spriteAtlas.GetEnvironmentSprite("floor")
+	case "environment/door_closed.png", "environment/door.png":
+		return itm.spriteAtlas.GetEnvironmentSprite("door")
+	case "environment/stairs_down.png":
+		return itm.spriteAtlas.GetEnvironmentSprite("stairs_down")
+	case "environment/stairs_up.png":
+		return itm.spriteAtlas.GetEnvironmentSprite("stairs_up")
+	case "items/flask_red.png", "items/potion.png":
+		return itm.spriteAtlas.GetItemSprite("potion")
+	case "items/scroll_01.png", "items/scroll.png":
+		return itm.spriteAtlas.GetItemSprite("scroll")
+	case "items/weapon_sword.png", "items/sword.png":
+		return itm.spriteAtlas.GetItemSprite("sword")
+	case "items/shield_wood.png", "items/shield.png":
+		return itm.spriteAtlas.GetItemSprite("shield")
+	case "items/coin_gold.png", "items/coin.png":
+		return itm.spriteAtlas.GetItemSprite("coin")
+	default:
+		return nil // Not found in atlas
+	}
+}
+
+// loadTileFromFile loads a tile from an individual file (fallback)
+func (itm *ImageTileManager) loadTileFromFile(tilePath string) image.Image {
 	file, err := os.Open(tilePath)
 	if err != nil {
 		logrus.Debugf("Failed to open tile file %s: %v", tilePath, err)
 		return nil
 	}
 	defer file.Close()
-	
+
 	img, err := png.Decode(file)
 	if err != nil {
 		logrus.Debugf("Failed to decode PNG tile %s: %v", tilePath, err)
 		return nil
 	}
-	
-	// Scale image if necessary
-	scaledImg := itm.scaleImage(img)
-	
-	// Cache the loaded tile
-	itm.mutex.Lock()
-	itm.tileCache[tilePath] = scaledImg
-	
-	// Implement simple LRU eviction if cache is too large
-	if len(itm.tileCache) > itm.config.CacheSize {
-		itm.evictOldestTiles()
-	}
-	itm.mutex.Unlock()
-	
-	return scaledImg
+
+	return img
 }
 
 // getCachedColoredTile retrieves a colored tile from cache
