@@ -35,6 +35,7 @@ var KEYS_NORMAL = map[gruid.Key]playerAction{
 	gruid.KeyPageDown:   ActionScrollMessagesDown,
 	"M":                 ActionScrollMessagesBottom,
 	"V":                 ActionFullMessageLog,
+	"T":                 ActionToggleTiles,
 }
 
 // KEYS_SCREEN defines key bindings for full-screen UI modes

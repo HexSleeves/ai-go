@@ -10,13 +10,17 @@ import (
 // GameConfig holds the configuration for the game
 type GameConfig struct {
 	DebugLogging bool
+	Tiles        TileConfig
 }
 
 // ParseFlags parses command-line flags and returns a GameConfig
 func ParseFlags() *GameConfig {
-	config := &GameConfig{}
+	config := &GameConfig{
+		Tiles: LoadTileConfig(), // Load tile configuration
+	}
 	flag.BoolVar(&config.DebugLogging, "debug", false, "Enable debug logging")
 	flag.BoolVar(&config.DebugLogging, "d", false, "Enable debug logging (shorthand)")
+	flag.BoolVar(&config.Tiles.Enabled, "tiles", config.Tiles.Enabled, "Enable tile-based rendering")
 	flag.Parse()
 	if config.DebugLogging {
 		logrus.SetLevel(logrus.DebugLevel)
