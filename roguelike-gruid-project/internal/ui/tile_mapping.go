@@ -2,25 +2,26 @@ package ui
 
 import (
 	"fmt"
-	"math/rand"
 	"path/filepath"
 
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/ecs"
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/ecs/components"
 )
 
-// TileMapping manages the mapping from game entities to tile images
+// TileMapping provides backward compatibility for the old tile mapping system
+// This is now a simplified wrapper that maintains the API but works with the atlas system
 type TileMapping struct {
-	EntityTiles    map[rune][]string            // Multiple tiles per entity for variety
-	WallTiles      map[string]string            // Different wall types
-	FloorTiles     map[string]string            // Different floor types
-	ItemTiles      map[string]string            // Item-specific tiles
-	MonsterTiles   map[string]string            // Monster-specific tiles
-	FallbackTile   string                       // Default tile when others are missing
+	EntityTiles    map[rune][]string            // Kept for backward compatibility (now unused)
+	WallTiles      map[string]string            // Kept for backward compatibility (now unused)
+	FloorTiles     map[string]string            // Kept for backward compatibility (now unused)
+	ItemTiles      map[string]string            // Kept for backward compatibility (now unused)
+	MonsterTiles   map[string]string            // Kept for backward compatibility (now unused)
+	FallbackTile   string                       // Kept for backward compatibility (now unused)
 	TilesetPath    string                       // Base path to tileset
 }
 
 // NewTileMapping creates a new tile mapping with default mappings
+// NOTE: This is now a compatibility wrapper - actual tile loading uses the sprite atlas
 func NewTileMapping(tilesetPath string) *TileMapping {
 	tm := &TileMapping{
 		EntityTiles:  make(map[rune][]string),
@@ -31,7 +32,7 @@ func NewTileMapping(tilesetPath string) *TileMapping {
 		FallbackTile: "fallback/unknown.png",
 		TilesetPath:  tilesetPath,
 	}
-	
+
 	tm.initializeDefaultMappings()
 	return tm
 }
@@ -87,15 +88,13 @@ func (tm *TileMapping) initializeDefaultMappings() {
 }
 
 // GetTileForRune returns a tile path for the given rune
+// NOTE: This is now a compatibility method - actual tile loading uses the sprite atlas
 func (tm *TileMapping) GetTileForRune(r rune) string {
 	if tiles, exists := tm.EntityTiles[r]; exists && len(tiles) > 0 {
-		// If multiple tiles available, pick one randomly for variety
-		if len(tiles) == 1 {
-			return tm.getFullPath(tiles[0])
-		}
-		return tm.getFullPath(tiles[rand.Intn(len(tiles))])
+		// Return first tile for consistency (no randomness needed with atlas)
+		return tm.getFullPath(tiles[0])
 	}
-	
+
 	// Return fallback tile
 	return tm.getFullPath(tm.FallbackTile)
 }

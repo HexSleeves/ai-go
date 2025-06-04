@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"image"
 	"image/draw"
-	"image/png"
-	"os"
 	"path/filepath"
 	"sync"
 
@@ -20,9 +18,8 @@ import (
 
 // ImageTileManager implements sdl.TileManager for image-based tiles
 type ImageTileManager struct {
-	tileCache    map[string]image.Image
-	coloredCache map[string]map[gruid.Color]image.Image
-	tileMapping  *TileMapping
+	tileCache    map[rune]image.Image
+	coloredCache map[rune]map[gruid.Color]image.Image
 	spriteAtlas  *KenneyRoguelikeAtlas // Sprite atlas for extracting tiles
 	config       *config.TileConfig
 	mutex        sync.RWMutex
@@ -32,9 +29,8 @@ type ImageTileManager struct {
 // NewImageTileManager creates a new image-based tile manager
 func NewImageTileManager(config *config.TileConfig, fontFallback sdl.TileManager) *ImageTileManager {
 	itm := &ImageTileManager{
-		tileCache:    make(map[string]image.Image),
-		coloredCache: make(map[string]map[gruid.Color]image.Image),
-		tileMapping:  NewTileMapping(config.TilesetPath),
+		tileCache:    make(map[rune]image.Image),
+		coloredCache: make(map[rune]map[gruid.Color]image.Image),
 		config:       config,
 		fontFallback: fontFallback,
 	}
@@ -79,16 +75,21 @@ func (itm *ImageTileManager) GetImage(c gruid.Cell) image.Image {
 		return itm.generateFallbackImage(c)
 	}
 
-	// Get tile path for this rune
-	tilePath := itm.tileMapping.GetTileForRune(c.Rune)
+	// If no sprite atlas is available, use font fallback
+	if itm.spriteAtlas == nil {
+		if itm.fontFallback != nil {
+			return itm.fontFallback.GetImage(c)
+		}
+		return itm.generateFallbackImage(c)
+	}
 
 	// Try to get colored version from cache
-	if img := itm.getCachedColoredTile(tilePath, c.Style.Fg, c.Style.Bg); img != nil {
+	if img := itm.getCachedColoredTile(c.Rune, c.Style.Fg, c.Style.Bg); img != nil {
 		return img
 	}
 
-	// Load base tile
-	baseImg := itm.loadTile(tilePath)
+	// Load base tile from atlas
+	baseImg := itm.loadTile(c.Rune)
 	if baseImg == nil {
 		// Fallback to font rendering if tile loading fails
 		if itm.fontFallback != nil {
@@ -99,7 +100,7 @@ func (itm *ImageTileManager) GetImage(c gruid.Cell) image.Image {
 
 	// Apply colors and cache result
 	coloredImg := itm.applyColors(baseImg, c.Style.Fg, c.Style.Bg, c.Style.Attrs)
-	itm.cacheColoredTile(tilePath, c.Style.Fg, coloredImg)
+	itm.cacheColoredTile(c.Rune, c.Style.Fg, coloredImg)
 
 	return coloredImg
 }
@@ -114,27 +115,21 @@ func (itm *ImageTileManager) TileSize() gruid.Point {
 	}
 }
 
-// loadTile loads a tile image, preferring sprite atlas over individual files
-func (itm *ImageTileManager) loadTile(tilePath string) image.Image {
+// loadTile loads a tile image from the sprite atlas
+func (itm *ImageTileManager) loadTile(r rune) image.Image {
 	itm.mutex.RLock()
-	if img, exists := itm.tileCache[tilePath]; exists {
+	if img, exists := itm.tileCache[r]; exists {
 		itm.mutex.RUnlock()
 		return img
 	}
 	itm.mutex.RUnlock()
 
-	var img image.Image
-
-	// Try to get tile from sprite atlas first
-	if itm.spriteAtlas != nil {
-		img = itm.getTileFromAtlas(tilePath)
+	// Get tile from sprite atlas
+	if itm.spriteAtlas == nil {
+		return nil
 	}
 
-	// Fallback to individual file loading if atlas doesn't have the tile
-	if img == nil {
-		img = itm.loadTileFromFile(tilePath)
-	}
-
+	img := itm.spriteAtlas.GetSpriteForRune(r)
 	if img == nil {
 		return nil
 	}
@@ -144,7 +139,7 @@ func (itm *ImageTileManager) loadTile(tilePath string) image.Image {
 
 	// Cache the loaded tile
 	itm.mutex.Lock()
-	itm.tileCache[tilePath] = scaledImg
+	itm.tileCache[r] = scaledImg
 
 	// Implement simple LRU eviction if cache is too large
 	if len(itm.tileCache) > itm.config.CacheSize {
@@ -155,70 +150,12 @@ func (itm *ImageTileManager) loadTile(tilePath string) image.Image {
 	return scaledImg
 }
 
-// getTileFromAtlas attempts to get a tile from the sprite atlas
-func (itm *ImageTileManager) getTileFromAtlas(tilePath string) image.Image {
-	// Map tile paths to sprite atlas coordinates
-	// This is a simplified mapping - you'd want a more comprehensive system
-	switch tilePath {
-	case "characters/knight_m.png", "characters/player.png":
-		return itm.spriteAtlas.GetPlayerSprite()
-	case "monsters/orc.png":
-		return itm.spriteAtlas.GetMonsterSprite("orc")
-	case "monsters/goblin.png":
-		return itm.spriteAtlas.GetMonsterSprite("goblin")
-	case "monsters/skeleton.png":
-		return itm.spriteAtlas.GetMonsterSprite("skeleton")
-	case "monsters/dragon.png":
-		return itm.spriteAtlas.GetMonsterSprite("dragon")
-	case "environment/wall_mid.png", "environment/wall.png":
-		return itm.spriteAtlas.GetEnvironmentSprite("wall")
-	case "environment/floor_1.png", "environment/floor.png":
-		return itm.spriteAtlas.GetEnvironmentSprite("floor")
-	case "environment/door_closed.png", "environment/door.png":
-		return itm.spriteAtlas.GetEnvironmentSprite("door")
-	case "environment/stairs_down.png":
-		return itm.spriteAtlas.GetEnvironmentSprite("stairs_down")
-	case "environment/stairs_up.png":
-		return itm.spriteAtlas.GetEnvironmentSprite("stairs_up")
-	case "items/flask_red.png", "items/potion.png":
-		return itm.spriteAtlas.GetItemSprite("potion")
-	case "items/scroll_01.png", "items/scroll.png":
-		return itm.spriteAtlas.GetItemSprite("scroll")
-	case "items/weapon_sword.png", "items/sword.png":
-		return itm.spriteAtlas.GetItemSprite("sword")
-	case "items/shield_wood.png", "items/shield.png":
-		return itm.spriteAtlas.GetItemSprite("shield")
-	case "items/coin_gold.png", "items/coin.png":
-		return itm.spriteAtlas.GetItemSprite("coin")
-	default:
-		return nil // Not found in atlas
-	}
-}
-
-// loadTileFromFile loads a tile from an individual file (fallback)
-func (itm *ImageTileManager) loadTileFromFile(tilePath string) image.Image {
-	file, err := os.Open(tilePath)
-	if err != nil {
-		logrus.Debugf("Failed to open tile file %s: %v", tilePath, err)
-		return nil
-	}
-	defer file.Close()
-
-	img, err := png.Decode(file)
-	if err != nil {
-		logrus.Debugf("Failed to decode PNG tile %s: %v", tilePath, err)
-		return nil
-	}
-
-	return img
-}
-
 // getCachedColoredTile retrieves a colored tile from cache
-func (itm *ImageTileManager) getCachedColoredTile(tilePath string, fg, bg gruid.Color) image.Image {
+func (itm *ImageTileManager) getCachedColoredTile(r rune, fg, bg gruid.Color) image.Image {
 	itm.mutex.RLock()
 	defer itm.mutex.RUnlock()
 
-	if colorMap, exists := itm.coloredCache[tilePath]; exists {
+	if colorMap, exists := itm.coloredCache[r]; exists {
 		if img, exists := colorMap[fg]; exists {
 			return img
 		}
@@ -227,14 +164,14 @@ func (itm *ImageTileManager) getCachedColoredTile(tilePath string, fg, bg gruid.
 }
 
 // cacheColoredTile stores a colored tile in cache
-func (itm *ImageTileManager) cacheColoredTile(tilePath string, fg gruid.Color, img image.Image) {
+func (itm *ImageTileManager) cacheColoredTile(r rune, fg gruid.Color, img image.Image) {
 	itm.mutex.Lock()
 	defer itm.mutex.Unlock()
 
-	if itm.coloredCache[tilePath] == nil {
-		itm.coloredCache[tilePath] = make(map[gruid.Color]image.Image)
+	if itm.coloredCache[r] == nil {
+		itm.coloredCache[r] = make(map[gruid.Color]image.Image)
 	}
-	itm.coloredCache[tilePath][fg] = img
+	itm.coloredCache[r][fg] = img
 }
 
 // applyColors applies foreground and background colors to a tile image
@@ -328,11 +265,10 @@ func (itm *ImageTileManager) generateFallbackImage(c gruid.Cell) image.Image {
 
 // preloadCommonTiles loads frequently used tiles into cache
 func (itm *ImageTileManager) preloadCommonTiles() {
-	commonRunes := []rune{'@', '#', '.', '+', '!', '?', 'o', 'g', 's'}
+	commonRunes := []rune{'@', '#', '.', '+', '!', '?', 'o', 'g', 's', 'D', '/', '\\', ')', '[', ']', '$', '*', '%', '=', '"'}
 
 	for _, r := range commonRunes {
-		tilePath := itm.tileMapping.GetTileForRune(r)
-		itm.loadTile(tilePath) // This will cache the tile
+		itm.loadTile(r) // This will cache the tile
 	}
 }
 
@@ -343,12 +279,12 @@ func (itm *ImageTileManager) evictOldestTiles() {
 	targetSize := itm.config.CacheSize * 3 / 4
 
 	count := 0
-	for tilePath := range itm.tileCache {
+	for r := range itm.tileCache {
 		if count >= len(itm.tileCache)-targetSize {
 			break
 		}
-		delete(itm.tileCache, tilePath)
-		delete(itm.coloredCache, tilePath)
+		delete(itm.tileCache, r)
+		delete(itm.coloredCache, r)
 		count++
 	}
 }
@@ -358,8 +294,8 @@ func (itm *ImageTileManager) ClearCache() {
 	itm.mutex.Lock()
 	defer itm.mutex.Unlock()
 
-	itm.tileCache = make(map[string]image.Image)
-	itm.coloredCache = make(map[string]map[gruid.Color]image.Image)
+	itm.tileCache = make(map[rune]image.Image)
+	itm.coloredCache = make(map[rune]map[gruid.Color]image.Image)
 }
 
 // UpdateConfig updates the tile manager configuration
@@ -367,16 +303,14 @@ func (itm *ImageTileManager) UpdateConfig(newConfig *config.TileConfig) {
 	itm.mutex.Lock()
 	defer itm.mutex.Unlock()
 
+	oldPath := itm.config.TilesetPath
 	itm.config = newConfig
-	itm.tileMapping = NewTileMapping(newConfig.TilesetPath)
 
-	// Clear cache if tileset path changed
-	itm.ClearCache()
-}
-
-// GetTileMapping returns the tile mapping for external use
-func (itm *ImageTileManager) GetTileMapping() *TileMapping {
-	return itm.tileMapping
+	// Reload sprite atlas if tileset path changed
+	if oldPath != newConfig.TilesetPath {
+		itm.loadSpriteAtlas()
+		itm.ClearCache()
+	}
 }
 
 // String returns a string representation for debugging

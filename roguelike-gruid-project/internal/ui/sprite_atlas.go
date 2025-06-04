@@ -211,6 +211,40 @@ var (
 	KenneyCoin      = gruid.Point{X: 9, Y: 26} // Gold coin
 )
 
+// RuneToSpriteMapping maps game runes directly to sprite atlas coordinates
+var RuneToSpriteMapping = map[rune]gruid.Point{
+	// Player character
+	'@': KenneyPlayer,
+
+	// Environment tiles
+	'#': KenneyWall,
+	'.': KenneyFloor,
+	'+': KenneyDoor,
+	'>': KenneyStairsDown,
+	'<': KenneyStairsUp,
+	' ': KenneyFloor, // Empty space shows floor
+
+	// Monsters
+	'o': KenneyOrc,
+	'g': KenneyGoblin,
+	's': KenneySkeleton,
+	'D': KenneyDragon,
+
+	// Items
+	'!': KenneyPotionRed, // Potions
+	'?': KenneyScroll,    // Scrolls
+	'/': KenneySword,     // Sword
+	'\\': KenneySword,    // Dagger (using sword sprite)
+	')': KenneySword,     // Bow (using sword sprite for now)
+	'[': KenneyShield,    // Armor (using shield sprite)
+	']': KenneyShield,    // Shield
+	'$': KenneyCoin,      // Gold
+	'*': KenneyCoin,      // Gems (using coin sprite)
+	'%': KenneyPotionRed, // Food (using potion sprite)
+	'=': KenneyCoin,      // Ring (using coin sprite)
+	'"': KenneyCoin,      // Amulet (using coin sprite)
+}
+
 // GetPlayerSprite returns the player character sprite
 func (kra *KenneyRoguelikeAtlas) GetPlayerSprite() image.Image {
 	return kra.atlas.GetSprite(KenneyPlayer.X, KenneyPlayer.Y)
@@ -272,6 +306,15 @@ func (kra *KenneyRoguelikeAtlas) GetItemSprite(itemType string) image.Image {
 		coord = KenneyPotionRed // Default to potion
 	}
 	return kra.atlas.GetSprite(coord.X, coord.Y)
+}
+
+// GetSpriteForRune returns a sprite for the given rune using the direct mapping
+func (kra *KenneyRoguelikeAtlas) GetSpriteForRune(r rune) image.Image {
+	if coord, exists := RuneToSpriteMapping[r]; exists {
+		return kra.atlas.GetSprite(coord.X, coord.Y)
+	}
+	// Return floor sprite as fallback
+	return kra.atlas.GetSprite(KenneyFloor.X, KenneyFloor.Y)
 }
 
 // GetAtlas returns the underlying sprite atlas
