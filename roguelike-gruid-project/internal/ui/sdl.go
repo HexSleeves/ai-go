@@ -27,7 +27,6 @@ func init() {
 	}
 
 	// Create image tile manager
-	EnsureFallbackTilesExist(tileConfig.TilesetPath, tileConfig.TileSize)
 	imageTileManager = NewImageTileManager(&tileConfig, fontTileDrawer)
 
 	// Choose initial tile manager based on configuration

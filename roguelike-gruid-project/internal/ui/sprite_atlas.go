@@ -20,12 +20,17 @@ type SpriteAtlas struct {
 	tileSize    int
 	tilesPerRow int
 	tilesPerCol int
+	margin      int
 	cache       map[gruid.Point]image.Image
 	mutex       sync.RWMutex
 }
 
 // NewSpriteAtlas creates a new sprite atlas from a spritesheet file
-func NewSpriteAtlas(spritesheetPath string, tileSize int) (*SpriteAtlas, error) {
+// Parameters:
+//   - spritesheetPath: path to the spritesheet image file
+//   - tileSize: size of each individual sprite in pixels (assumes square sprites)
+//   - margin: margin/padding around the spritesheet edges in pixels
+func NewSpriteAtlas(spritesheetPath string, tileSize int, margin int) (*SpriteAtlas, error) {
 	// Load the spritesheet image
 	file, err := os.Open(spritesheetPath)
 	if err != nil {
@@ -39,8 +44,8 @@ func NewSpriteAtlas(spritesheetPath string, tileSize int) (*SpriteAtlas, error) 
 	}
 
 	bounds := img.Bounds()
-	tilesPerRow := bounds.Dx() / tileSize
-	tilesPerCol := bounds.Dy() / tileSize
+	tilesPerRow := (bounds.Dx() - margin) / tileSize
+	tilesPerCol := (bounds.Dy() - margin) / tileSize
 
 	logrus.Infof("Loaded spritesheet: %dx%d pixels, %dx%d tiles (%d total)",
 		bounds.Dx(), bounds.Dy(), tilesPerRow, tilesPerCol, tilesPerRow*tilesPerCol)
@@ -50,6 +55,7 @@ func NewSpriteAtlas(spritesheetPath string, tileSize int) (*SpriteAtlas, error) 
 		tileSize:    tileSize,
 		tilesPerRow: tilesPerRow,
 		tilesPerCol: tilesPerCol,
+		margin:      margin,
 		cache:       make(map[gruid.Point]image.Image),
 	}, nil
 }
@@ -87,9 +93,9 @@ func (sa *SpriteAtlas) GetSprite(x, y int) image.Image {
 
 // extractSprite extracts a single sprite from the spritesheet
 func (sa *SpriteAtlas) extractSprite(x, y int) image.Image {
-	// Calculate pixel coordinates
-	startX := x * sa.tileSize
-	startY := y * sa.tileSize
+	// Calculate pixel coordinates with margin offset
+	startX := sa.margin + x*sa.tileSize
+	startY := sa.margin + y*sa.tileSize
 	endX := startX + sa.tileSize
 	endY := startY + sa.tileSize
 
@@ -127,6 +133,7 @@ func (sa *SpriteAtlas) GetTileSize() int {
 }
 
 // GetDimensions returns the dimensions of the spritesheet in tiles
+// The returned dimensions account for any margin specified during atlas creation
 func (sa *SpriteAtlas) GetDimensions() (tilesPerRow, tilesPerCol int) {
 	return sa.tilesPerRow, sa.tilesPerCol
 }
@@ -174,8 +181,9 @@ type KenneyRoguelikeAtlas struct {
 }
 
 // NewKenneyRoguelikeAtlas creates an atlas specifically for Kenney's Roguelike pack
+// Uses 16x16 pixel tiles with a 1-pixel margin around the spritesheet edges
 func NewKenneyRoguelikeAtlas(spritesheetPath string) (*KenneyRoguelikeAtlas, error) {
-	atlas, err := NewSpriteAtlas(spritesheetPath, 16) // Kenney's tiles are 16x16
+	atlas, err := NewSpriteAtlas(spritesheetPath, 16, 1) // Kenney's tiles are 16x16 with 1px margin
 	if err != nil {
 		return nil, err
 	}
@@ -183,32 +191,56 @@ func NewKenneyRoguelikeAtlas(spritesheetPath string) (*KenneyRoguelikeAtlas, err
 	return &KenneyRoguelikeAtlas{atlas: atlas}, nil
 }
 
-// Common sprite coordinates for Kenney's Roguelike pack
-// These are approximate - you'll need to adjust based on the actual spritesheet layout
+// Common sprite coordinates for Kenney's Roguelike pack (colored-transparent_packed.png)
+// Coordinates are based on the 57x31 grid layout with 16x16 pixel tiles
 var (
-	// Characters (approximate positions - adjust based on actual spritesheet)
-	KenneyPlayer    = gruid.Point{X: 28, Y: 0} // Knight character
-	KenneyPlayerAlt = gruid.Point{X: 29, Y: 0} // Alternative player
+	// Characters - Top rows contain various character types
+	KenneyPlayer    = gruid.Point{X: 28, Y: 0} // Knight character (armored)
+	KenneyPlayerAlt = gruid.Point{X: 29, Y: 0} // Alternative knight
+	KenneyRogue     = gruid.Point{X: 30, Y: 0} // Rogue character
+	KenneyMage      = gruid.Point{X: 31, Y: 0} // Mage character
 
-	// Monsters (approximate positions)
-	KenneyOrc      = gruid.Point{X: 14, Y: 19} // Orc
+	// Monsters - Various creatures throughout the sheet
+	KenneyOrc      = gruid.Point{X: 26, Y: 2}  // Orc warrior
 	KenneyGoblin   = gruid.Point{X: 13, Y: 19} // Goblin
 	KenneySkeleton = gruid.Point{X: 15, Y: 19} // Skeleton
-	KenneyDragon   = gruid.Point{X: 24, Y: 18} // Dragon
+	KenneyDragon   = gruid.Point{X: 53, Y: 18} // Dragon (large creature)
+	KenneyBat      = gruid.Point{X: 51, Y: 18} // Bat
+	KenneySpider   = gruid.Point{X: 52, Y: 18} // Spider
+	KenneyRat      = gruid.Point{X: 50, Y: 18} // Rat
+	KenneySnake    = gruid.Point{X: 49, Y: 18} // Snake
 
-	// Environment (approximate positions)
-	KenneyWall       = gruid.Point{X: 1, Y: 2} // Wall
-	KenneyFloor      = gruid.Point{X: 0, Y: 2} // Floor
-	KenneyDoor       = gruid.Point{X: 2, Y: 2} // Door
-	KenneyStairsDown = gruid.Point{X: 3, Y: 2} // Stairs down
-	KenneyStairsUp   = gruid.Point{X: 4, Y: 2} // Stairs up
+	// Environment tiles - Walls, floors, doors scattered throughout
+	KenneyWall       = gruid.Point{X: 0, Y: 13} // Stone wall
+	KenneyWallAlt    = gruid.Point{X: 2, Y: 2}  // Alternative wall
+	KenneyFloor      = gruid.Point{X: 2, Y: 0}  // Stone floor
+	KenneyFloorAlt   = gruid.Point{X: 3, Y: 0}  // Alternative floor
+	KenneyDoor       = gruid.Point{X: 4, Y: 2}  // Closed door
+	KenneyDoorOpen   = gruid.Point{X: 5, Y: 2}  // Open door
+	KenneyStairsDown = gruid.Point{X: 6, Y: 2}  // Stairs going down
+	KenneyStairsUp   = gruid.Point{X: 7, Y: 2}  // Stairs going up
 
-	// Items (approximate positions)
-	KenneyPotionRed = gruid.Point{X: 9, Y: 23} // Red potion
-	KenneyScroll    = gruid.Point{X: 6, Y: 23} // Scroll
-	KenneySword     = gruid.Point{X: 0, Y: 29} // Sword
-	KenneyShield    = gruid.Point{X: 6, Y: 29} // Shield
-	KenneyCoin      = gruid.Point{X: 9, Y: 26} // Gold coin
+	// Items - Potions, weapons, armor, etc.
+	KenneyPotionRed   = gruid.Point{X: 9, Y: 23}  // Red health potion
+	KenneyPotionBlue  = gruid.Point{X: 10, Y: 23} // Blue mana potion
+	KenneyPotionGreen = gruid.Point{X: 11, Y: 23} // Green poison potion
+	KenneyScroll      = gruid.Point{X: 6, Y: 23}  // Magic scroll
+	KenneyBook        = gruid.Point{X: 7, Y: 23}  // Spellbook
+	KenneySword       = gruid.Point{X: 32, Y: 8}  // Iron sword
+	KenneySwordGold   = gruid.Point{X: 1, Y: 29}  // Golden sword
+	KenneyDagger      = gruid.Point{X: 2, Y: 29}  // Dagger
+	KenneyBow         = gruid.Point{X: 3, Y: 29}  // Bow
+	KenneyShield      = gruid.Point{X: 6, Y: 29}  // Wooden shield
+	KenneyShieldMetal = gruid.Point{X: 7, Y: 29}  // Metal shield
+	KenneyArmor       = gruid.Point{X: 8, Y: 29}  // Chest armor
+	KenneyHelmet      = gruid.Point{X: 9, Y: 29}  // Helmet
+	KenneyCoin        = gruid.Point{X: 9, Y: 26}  // Gold coin
+	KenneyGem         = gruid.Point{X: 10, Y: 26} // Precious gem
+	KenneyKey         = gruid.Point{X: 11, Y: 26} // Key
+	KenneyChest       = gruid.Point{X: 12, Y: 26} // Treasure chest
+	KenneyFood        = gruid.Point{X: 13, Y: 26} // Food/bread
+	KenneyRing        = gruid.Point{X: 14, Y: 26} // Magic ring
+	KenneyAmulet      = gruid.Point{X: 15, Y: 26} // Amulet
 )
 
 // RuneToSpriteMapping maps game runes directly to sprite atlas coordinates
@@ -224,30 +256,61 @@ var RuneToSpriteMapping = map[rune]gruid.Point{
 	'<': KenneyStairsUp,
 	' ': KenneyFloor, // Empty space shows floor
 
-	// Monsters
+	// Monsters - More variety with specific sprites
 	'o': KenneyOrc,
 	'g': KenneyGoblin,
 	's': KenneySkeleton,
 	'D': KenneyDragon,
+	'b': KenneyBat,    // Bat
+	'S': KenneySpider, // Spider (capital S for larger creature)
+	'r': KenneyRat,    // Rat
+	'~': KenneySnake,  // Snake (using ~ for serpentine movement)
 
-	// Items
-	'!': KenneyPotionRed, // Potions
-	'?': KenneyScroll,    // Scrolls
-	'/': KenneySword,     // Sword
-	'\\': KenneySword,    // Dagger (using sword sprite)
-	')': KenneySword,     // Bow (using sword sprite for now)
-	'[': KenneyShield,    // Armor (using shield sprite)
-	']': KenneyShield,    // Shield
-	'$': KenneyCoin,      // Gold
-	'*': KenneyCoin,      // Gems (using coin sprite)
-	'%': KenneyPotionRed, // Food (using potion sprite)
-	'=': KenneyCoin,      // Ring (using coin sprite)
-	'"': KenneyCoin,      // Amulet (using coin sprite)
+	// Items - Using appropriate sprites for each type
+	'!':  KenneyPotionRed, // Health potions (red)
+	'?':  KenneyScroll,    // Scrolls and books
+	'/':  KenneySword,     // Sword
+	'\\': KenneyDagger,    // Dagger (now using proper dagger sprite)
+	')':  KenneyBow,       // Bow (now using proper bow sprite)
+	'[':  KenneyArmor,     // Armor (now using proper armor sprite)
+	']':  KenneyShield,    // Shield
+	'$':  KenneyCoin,      // Gold coins
+	'*':  KenneyGem,       // Gems (now using proper gem sprite)
+	'%':  KenneyFood,      // Food (now using proper food sprite)
+	'=':  KenneyRing,      // Ring (now using proper ring sprite)
+	'"':  KenneyAmulet,    // Amulet (now using proper amulet sprite)
+	'&':  KenneyChest,     // Treasure chest
+	'-':  KenneyKey,       // Key
+
+	// Additional item variations
+	'¡': KenneyPotionBlue,  // Mana potions (inverted !)
+	'¿': KenneyBook,        // Spellbooks (inverted ?)
+	'†': KenneySwordGold,   // Special/magical sword
+	'‡': KenneyShieldMetal, // Metal/magical shield
+	'°': KenneyHelmet,      // Helmet
 }
 
 // GetPlayerSprite returns the player character sprite
 func (kra *KenneyRoguelikeAtlas) GetPlayerSprite() image.Image {
 	return kra.atlas.GetSprite(KenneyPlayer.X, KenneyPlayer.Y)
+}
+
+// GetPlayerSpriteByClass returns a player sprite based on character class
+func (kra *KenneyRoguelikeAtlas) GetPlayerSpriteByClass(class string) image.Image {
+	var coord gruid.Point
+	switch class {
+	case "knight", "warrior", "fighter":
+		coord = KenneyPlayer
+	case "knight_alt", "paladin":
+		coord = KenneyPlayerAlt
+	case "rogue", "thief", "assassin":
+		coord = KenneyRogue
+	case "mage", "wizard", "sorcerer":
+		coord = KenneyMage
+	default:
+		coord = KenneyPlayer // Default to knight
+	}
+	return kra.atlas.GetSprite(coord.X, coord.Y)
 }
 
 // GetMonsterSprite returns a monster sprite by type
@@ -262,6 +325,14 @@ func (kra *KenneyRoguelikeAtlas) GetMonsterSprite(monsterType string) image.Imag
 		coord = KenneySkeleton
 	case "dragon":
 		coord = KenneyDragon
+	case "bat":
+		coord = KenneyBat
+	case "spider":
+		coord = KenneySpider
+	case "rat":
+		coord = KenneyRat
+	case "snake":
+		coord = KenneySnake
 	default:
 		coord = KenneyOrc // Default to orc
 	}
@@ -274,10 +345,16 @@ func (kra *KenneyRoguelikeAtlas) GetEnvironmentSprite(envType string) image.Imag
 	switch envType {
 	case "wall":
 		coord = KenneyWall
+	case "wall_alt":
+		coord = KenneyWallAlt
 	case "floor":
 		coord = KenneyFloor
+	case "floor_alt":
+		coord = KenneyFloorAlt
 	case "door":
 		coord = KenneyDoor
+	case "door_open":
+		coord = KenneyDoorOpen
 	case "stairs_down":
 		coord = KenneyStairsDown
 	case "stairs_up":
@@ -292,16 +369,46 @@ func (kra *KenneyRoguelikeAtlas) GetEnvironmentSprite(envType string) image.Imag
 func (kra *KenneyRoguelikeAtlas) GetItemSprite(itemType string) image.Image {
 	var coord gruid.Point
 	switch itemType {
-	case "potion":
+	case "potion", "health_potion":
 		coord = KenneyPotionRed
+	case "mana_potion":
+		coord = KenneyPotionBlue
+	case "poison_potion":
+		coord = KenneyPotionGreen
 	case "scroll":
 		coord = KenneyScroll
+	case "book", "spellbook":
+		coord = KenneyBook
 	case "sword":
 		coord = KenneySword
+	case "golden_sword", "magic_sword":
+		coord = KenneySwordGold
+	case "dagger":
+		coord = KenneyDagger
+	case "bow":
+		coord = KenneyBow
 	case "shield":
 		coord = KenneyShield
-	case "coin":
+	case "metal_shield", "magic_shield":
+		coord = KenneyShieldMetal
+	case "armor":
+		coord = KenneyArmor
+	case "helmet":
+		coord = KenneyHelmet
+	case "coin", "gold":
 		coord = KenneyCoin
+	case "gem":
+		coord = KenneyGem
+	case "key":
+		coord = KenneyKey
+	case "chest":
+		coord = KenneyChest
+	case "food":
+		coord = KenneyFood
+	case "ring":
+		coord = KenneyRing
+	case "amulet":
+		coord = KenneyAmulet
 	default:
 		coord = KenneyPotionRed // Default to potion
 	}

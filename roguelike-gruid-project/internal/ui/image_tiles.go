@@ -47,22 +47,14 @@ func NewImageTileManager(config *config.TileConfig, fontFallback sdl.TileManager
 // loadSpriteAtlas attempts to load the Kenney spritesheet
 func (itm *ImageTileManager) loadSpriteAtlas() {
 	// Try alternative common names for the spritesheet
-	alternativePaths := []string{
-		filepath.Join(itm.config.TilesetPath, "roguelike_spritesheet.png"),
-		filepath.Join(itm.config.TilesetPath, "spritesheet.png"),
-		filepath.Join(itm.config.TilesetPath, "kenney_roguelike.png"),
-		filepath.Join(itm.config.TilesetPath, "roguelike.png"),
+	path := filepath.Join(itm.config.TilesetPath, "colored-transparent_packed.png")
+	if atlas, err := NewKenneyRoguelikeAtlas(path); err == nil {
+		itm.spriteAtlas = atlas
+		logrus.Infof("Loaded sprite atlas from: %s", path)
+		return
 	}
 
-	for _, path := range alternativePaths {
-		if atlas, err := NewKenneyRoguelikeAtlas(path); err == nil {
-			itm.spriteAtlas = atlas
-			logrus.Infof("Loaded sprite atlas from: %s", path)
-			return
-		}
-	}
-
-	logrus.Warn("No sprite atlas found. Place Kenney's spritesheet as 'roguelike_spritesheet.png' in the tileset directory")
+	logrus.Warn("No sprite atlas found. Place Kenney's spritesheet as 'colored-transparent_packed.png' in the tileset directory")
 }
 
 // GetImage implements sdl.TileManager.GetImage
@@ -77,6 +69,16 @@ func (itm *ImageTileManager) GetImage(c gruid.Cell) image.Image {
 
 	// If no sprite atlas is available, use font fallback
 	if itm.spriteAtlas == nil {
+		if itm.fontFallback != nil {
+			return itm.fontFallback.GetImage(c)
+		}
+		return itm.generateFallbackImage(c)
+	}
+
+	// Check if this rune should use sprite rendering
+	// Only use sprites for runes that are explicitly mapped in the atlas
+	if !itm.shouldUseSprite(c.Rune) {
+		// Use font fallback for text characters (letters, numbers, punctuation, etc.)
 		if itm.fontFallback != nil {
 			return itm.fontFallback.GetImage(c)
 		}
@@ -103,6 +105,15 @@ func (itm *ImageTileManager) GetImage(c gruid.Cell) image.Image {
 	itm.cacheColoredTile(c.Rune, c.Style.Fg, coloredImg)
 
 	return coloredImg
+}
+
+// shouldUseSprite determines if a rune should be rendered using sprites or fonts
+func (itm *ImageTileManager) shouldUseSprite(r rune) bool {
+	// Only use sprites for runes that are explicitly mapped in the sprite atlas
+	// This ensures that UI text (letters, numbers, punctuation) uses font rendering
+	// while game entities use sprite rendering
+	_, exists := RuneToSpriteMapping[r]
+	return exists
 }
 
 // TileSize implements sdl.TileManager.TileSize
@@ -240,6 +251,8 @@ func (itm *ImageTileManager) scaleImage(img image.Image) image.Image {
 
 // generateFallbackImage creates a simple colored rectangle as fallback
 func (itm *ImageTileManager) generateFallbackImage(c gruid.Cell) image.Image {
+	logrus.Warn("Generating fallback image")
+
 	size := itm.TileSize()
 	img := image.NewRGBA(image.Rect(0, 0, size.X, size.Y))
 
