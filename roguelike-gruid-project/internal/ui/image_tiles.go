@@ -13,6 +13,7 @@ import (
 	"codeberg.org/anaseto/gruid"
 	sdl "codeberg.org/anaseto/gruid-sdl"
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/config"
+	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/constants"
 	"github.com/sirupsen/logrus"
 )
 
@@ -108,12 +109,25 @@ func (itm *ImageTileManager) GetImage(c gruid.Cell) image.Image {
 }
 
 // shouldUseSprite determines if a rune should be rendered using sprites or fonts
+// shouldUseSprite determines if a rune should be rendered using sprites or fonts
 func (itm *ImageTileManager) shouldUseSprite(r rune) bool {
-	// Only use sprites for runes that are explicitly mapped in the sprite atlas
-	// This ensures that UI text (letters, numbers, punctuation) uses font rendering
-	// while game entities use sprite rendering
+	// Only use sprites for runes that are clearly game entities, not common text characters
+	// This is a more conservative approach that avoids conflicts with UI text
+
+	// Check if it's explicitly mapped in the sprite atlas
 	_, exists := RuneToSpriteMapping[r]
-	return exists
+	if !exists {
+		return false
+	}
+
+	// If it's a common text character, don't use sprites
+	if constants.IsCommonTextChar(r) {
+		return false
+	}
+
+	// Only use sprites for clearly non-text characters that are mapped
+	// This includes special symbols that are unlikely to appear in UI text
+	return true
 }
 
 // TileSize implements sdl.TileManager.TileSize

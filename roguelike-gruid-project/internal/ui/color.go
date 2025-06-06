@@ -123,16 +123,16 @@ func init() {
 	ColorStatusNeutral = ColorYellow
 
 	// Debug colors
-	ColorDebugFOVVisible = ColorForegroundEmph     // Bright white for currently visible
+	ColorDebugFOVVisible = ColorForegroundEmph       // Bright white for currently visible
 	ColorDebugFOVExplored = ColorBackgroundSecondary // Dim gray for explored
-	ColorDebugFOVUnexplored = ColorBackground      // Very dark for unexplored
-	ColorDebugPathChasing = ColorRed               // Red for aggressive/chase behavior
-	ColorDebugPathFleeing = ColorYellow            // Yellow for flee/retreat behavior
-	ColorDebugPathPatrolling = ColorBlue           // Blue for patrol/wander behavior
-	ColorDebugPathSearching = ColorGreen           // Green for searching/other behaviors
-	ColorDebugTarget = ColorMagenta                // Magenta for target destinations
-	ColorDebugWaypoint = ColorCyan                 // Cyan for waypoints
-	ColorDebugAIPanel = ColorForegroundSecondary   // Gray for AI debug panel
+	ColorDebugFOVUnexplored = ColorBackground        // Very dark for unexplored
+	ColorDebugPathChasing = ColorRed                 // Red for aggressive/chase behavior
+	ColorDebugPathFleeing = ColorYellow              // Yellow for flee/retreat behavior
+	ColorDebugPathPatrolling = ColorBlue             // Blue for patrol/wander behavior
+	ColorDebugPathSearching = ColorGreen             // Green for searching/other behaviors
+	ColorDebugTarget = ColorMagenta                  // Magenta for target destinations
+	ColorDebugWaypoint = ColorCyan                   // Cyan for waypoints
+	ColorDebugAIPanel = ColorForegroundSecondary     // Gray for AI debug panel
 }
 
 // Helper function to get a style for a map cell based on explored/visible state
