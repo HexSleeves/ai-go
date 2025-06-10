@@ -349,14 +349,13 @@ func (itm *ImageTileManager) UpdateConfig(newConfig *config.DisplayConfig) {
 		itm.ClearCache()
 	}
 
-	// Clear caches when config is updated to ensure new settings are applied
-	// if !itm.config.TilesEnabled { // Redundant, handled by ClearCache() already
-	// 	itm.ClearCache()
-	// }
 }
 
 // String implements fmt.Stringer for ImageTileManager
 func (itm *ImageTileManager) String() string {
+	itm.mutex.RLock()
+	defer itm.mutex.RUnlock()
+
 	return fmt.Sprintf("ImageTileManager{CachedTiles: %d, ColoredTiles: %d, Enabled: %v}",
 		len(itm.tileCache), len(itm.coloredCache), itm.config.TilesEnabled)
 }

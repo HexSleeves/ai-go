@@ -292,10 +292,21 @@ func SaveConfig(config *FullConfig) error {
 func mergeWithDefaults(config FullConfig) FullConfig {
 	defaults := DefaultConfig()
 
-	// This is a simplified merge - in practice, you'd want to merge each field
-	// For now, just ensure key bindings exist
 	if config.Input.KeyBindings == nil {
 		config.Input.KeyBindings = defaults.Input.KeyBindings
+	}
+
+	// Merge missing gameplay fields
+	if config.Gameplay.DungeonWidth == 0 {
+		config.Gameplay.DungeonWidth = defaults.Gameplay.DungeonWidth
+	}
+	if config.Gameplay.DungeonHeight == 0 {
+		config.Gameplay.DungeonHeight = defaults.Gameplay.DungeonHeight
+	}
+
+	// Merge missing display fields
+	if config.Display.TilesetPath == "" {
+		config.Display.TilesetPath = defaults.Display.TilesetPath
 	}
 
 	return config
@@ -304,10 +315,27 @@ func mergeWithDefaults(config FullConfig) FullConfig {
 // ValidateConfig validates configuration values
 func ValidateConfig(config *FullConfig) error {
 	// Validate gameplay settings
+	if config.Gameplay.DungeonWidth < 20 || config.Gameplay.DungeonWidth > 200 {
+		return fmt.Errorf("dungeon width must be between 20 and 200")
+	}
+
+	if config.Gameplay.DungeonHeight < 10 || config.Gameplay.DungeonHeight > 100 {
+		return fmt.Errorf("dungeon height must be between 10 and 100")
+	}
+
+	// Validate gameplay settings
 	if config.Gameplay.FOVRadius < 1 || config.Gameplay.FOVRadius > 20 {
 		return fmt.Errorf("FOV radius must be between 1 and 20")
 	}
 
+	// Validate display settings
+	if config.Display.ScaleFactorX < 0.1 || config.Display.ScaleFactorX > 5.0 {
+		return fmt.Errorf("scale factor X must be between 0.1 and 5.0")
+	}
+
+	if config.Display.ScaleFactorY < 0.1 || config.Display.ScaleFactorY > 5.0 {
+		return fmt.Errorf("scale factor Y must be between 0.1 and 5.0")
+	}
 	if config.Gameplay.AnimationSpeed < 1 || config.Gameplay.AnimationSpeed > 10 {
 		return fmt.Errorf("animation speed must be between 1 and 10")
 	}

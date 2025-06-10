@@ -73,14 +73,19 @@ func ToggleTileMode() error {
 	// Toggle the enabled state
 	currentConfig.Display.TilesEnabled = !currentConfig.Display.TilesEnabled
 
-	// Save the new configuration
-	if err := config.SaveConfig(currentConfig); err != nil {
-		return err
-	}
-
-	// Update the image tile manager configuration
+	// Update the image tile manager configuration first
 	if imageTileManager != nil {
 		imageTileManager.UpdateConfig(&currentConfig.Display)
+	}
+
+	// Save the new configuration only after successful update
+	if err := config.SaveConfig(currentConfig); err != nil {
+		// Revert the tile manager state if save fails
+		currentConfig.Display.TilesEnabled = !currentConfig.Display.TilesEnabled
+		if imageTileManager != nil {
+			imageTileManager.UpdateConfig(&currentConfig.Display)
+		}
+		return err
 	}
 
 	// Switch tile manager

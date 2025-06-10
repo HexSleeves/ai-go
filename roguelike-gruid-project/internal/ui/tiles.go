@@ -46,6 +46,10 @@ func (t *TileDrawer) TileSize() gruid.Point {
 // GetTileDrawer returns a TileDrawer that implements TileManager for the sdl
 // driver, or an error if there were problems setting up the font face.
 func GetTileDrawer(displayConfig config.DisplayConfig) (*TileDrawer, error) {
+	if displayConfig.FontSize <= 0 {
+		return nil, fmt.Errorf("invalid font size: %v (must be positive)", displayConfig.FontSize)
+	}
+
 	parsedFont, err := opentype.Parse(gomono.TTF)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse font: %w", err)
@@ -66,6 +70,6 @@ func GetTileDrawer(displayConfig config.DisplayConfig) (*TileDrawer, error) {
 		return nil, err
 	}
 
-	logrus.Info("Loaded font gomono.ttf with size ", displayConfig.FontSize)
+	logrus.Infof("Loaded font gomono.ttf with size %d", displayConfig.FontSize)
 	return t, nil
 }
