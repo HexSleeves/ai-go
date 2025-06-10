@@ -1,0 +1,110 @@
+---
+description:
+globs: *.go
+alwaysApply: false
+---
+# Go Concurrency Best Practices
+
+- **Use Goroutines for Concurrency**: Utilize goroutines for concurrent execution of functions.
+  ```go
+  // ✅ DO: Start goroutines for concurrent tasks.
+  go func() {
+      // concurrent work
+  }()
+
+  // ❌ DON'T: Manage concurrency manually with OS threads.
+  // (Not directly applicable in Go as goroutines are lightweight threads)
+  ```
+
+- **Communicate with Channels**: Prefer communicating by sharing memory, rather than sharing memory by communicating (CSP model). Use channels for safe and synchronized data exchange between goroutines.
+  ```go
+  // ✅ DO: Use channels for communication.
+  ch := make(chan int)
+  go func() {
+      ch <- 1 // Send data
+  }()
+  data := <-ch // Receive data
+
+  // ❌ DON'T: Use shared memory with locks for simple communication.
+  // (Though mutexes have their place for protecting shared resources)
+  var mu sync.Mutex
+  var counter int
+  go func() {
+      mu.Lock()
+      counter++
+      mu.Unlock()
+  }()
+  ```
+
+- **Avoid Naked Goroutines (Prefer `context` or `sync.WaitGroup`)**: Ensure goroutines are properly managed and cleaned up. Use `context` for cancellation and timeouts, and `sync.WaitGroup` to wait for goroutines to complete.
+  ```go
+  // ✅ DO: Use sync.WaitGroup to wait for goroutines.
+  var wg sync.WaitGroup
+  wg.Add(1)
+  go func() {
+      defer wg.Done()
+      // work
+  }()
+  wg.Wait()
+
+  // ✅ DO: Use context for cancellation/timeouts.
+  ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+  defer cancel()
+  go func() {
+      select {
+      case <-ctx.Done():
+          fmt.Println("Goroutine cancelled or timed out")
+          return
+      // ...
+      }
+  }()
+  ```
+
+- **Don't Block Indefinitely on Channels**: Be mindful of potential deadlocks. Use `select` with `default` clauses or timeouts to prevent indefinite blocking.
+  ```go
+  // ✅ DO: Use select with a timeout to avoid blocking.
+  select {
+  case res := <-resultChan:
+      fmt.Println("Received:", res)
+  case <-time.After(1 * time.Second):
+      fmt.Println("Timeout")
+  }
+
+  // ❌ DON'T: Block indefinitely if not intended.
+  // result := <-resultChan // This might block forever
+  ```
+
+- **Handle Goroutine Leaks**: Always ensure that goroutines exit cleanly, especially when they are spawned in loops or in response to events. Unmanaged goroutines can lead to memory leaks.
+  ```go
+  // ✅ DO: Ensure goroutines have an exit condition.
+  func worker(ctx context.Context, tasks <-chan string) {
+      for {
+          select {
+          case <-ctx.Done():
+              return // Exit cleanly
+          case task := <-tasks:
+              fmt.Println("Processing", task)
+          }
+      }
+  }
+  ```
+
+- **Use Mutexes for Shared State Protection**: When goroutines need to share memory directly, use `sync.Mutex` or `sync.RWMutex` to protect shared resources from race conditions.
+  ```go
+  // ✅ DO: Use mutexes to protect shared state.
+  type SafeCounter struct {
+      mu    sync.Mutex
+      count int
+  }
+
+  func (c *SafeCounter) Inc() {
+      c.mu.Lock()
+      defer c.mu.Unlock()
+      c.count++
+  }
+
+  // ❌ DON'T: Access shared state without synchronization.
+  // (This will lead to race conditions and unpredictable behavior)
+  // var counter int
+  // go func() { counter++ }()
+  ```

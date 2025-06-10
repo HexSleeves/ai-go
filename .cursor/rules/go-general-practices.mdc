@@ -1,0 +1,118 @@
+---
+description:
+globs: *.go
+alwaysApply: false
+---
+# General Go Best Practices and Idioms
+
+- **Favor the Standard Library**: Before reaching for external packages, always check if the Go standard library provides the necessary functionality. It's well-tested, performant, and consistent.
+  ```go
+  // ✅ DO: Use standard library for common tasks.
+  import (
+      "encoding/json"
+      "fmt"
+      "net/http"
+  )
+
+  // ❌ DON'T: Introduce unnecessary external dependencies for basic functionalities.
+  // import (
+  //     "github.com/some/json-lib"
+  //     "github.com/some/stringutil"
+  // )
+  ```
+
+- **Use Built-in Types and Functions Appropriately**: Understand and use built-in types (like slices, maps, strings) and functions (like `len`, `cap`, `make`, `new`) effectively and efficiently.
+  ```go
+  // ✅ DO: Use append for slices.
+  s := []int{1, 2}
+  s = append(s, 3)
+
+  // ❌ DON'T: Manually re-allocate slices unless profiling indicates a bottleneck.
+  // s := make([]int, 0, initialCap)
+  ```
+
+- **Write Self-Contained and Reusable Code**: Design functions and packages to be self-contained and easily reusable in different contexts. Avoid global state where possible.
+  ```go
+  // ✅ DO: Functions with clear inputs and outputs.
+  func ProcessData(input []byte) ([]byte, error) {
+      // ...
+  }
+
+  // ❌ DON'T: Rely heavily on global variables or side effects.
+  // var globalConfig *Config
+  // func init() { globalConfig = loadConfig() }
+  // func ProcessData() { /* uses globalConfig */ }
+  ```
+
+- **Don't Over-Engineer (Keep it Simple)**: Go values simplicity. Avoid complex abstractions, design patterns, or generics if a simpler solution suffices. Start simple and add complexity only when the need arises.
+  ```go
+  // ✅ DO: Simple and direct solutions.
+  if user.IsActive() {
+      sendEmail(user.Email)
+  }
+
+  // ❌ DON'T: Introduce unnecessary complexity.
+  // type UserActivityService interface {
+  //     ProcessUser(user User)
+  // }
+  // type ActiveUserEmailService struct{}
+  // func (s *ActiveUserEmailService) ProcessUser(user User) {
+  //     if user.IsActive() { sendEmail(user.Email) }
+  // }
+  ```
+
+- **Efficient String Concatenation**: For concatenating many strings, use `strings.Builder` for better performance than repeated `+` operations.
+  ```go
+  // ✅ DO: Use strings.Builder for efficient concatenation.
+  var sb strings.Builder
+  for i := 0; i < 1000; i++ {
+      sb.WriteString("hello")
+  }
+  result := sb.String()
+
+  // ❌ DON'T: Repeatedly use + for string concatenation in loops.
+  // var s string
+  // for i := 0; i < 1000; i++ {
+  //     s += "hello"
+  // }
+  ```
+
+- **Defer Usage**: Use `defer` statements for cleanup operations (e.g., closing files, unlocking mutexes) to ensure they are executed even if errors occur. Place `defer` calls immediately after the resource is opened/acquired.
+  ```go
+  // ✅ DO: Defer resource cleanup immediately.
+  file, err := os.Open("file.txt")
+  if err != nil { return err }
+  defer file.Close()
+  // ... operations on file
+  ```
+
+- **Pointers vs. Values**: Pass values when the data is small and copying is acceptable. Pass pointers when modifying the original data is desired or when the data structure is large to avoid expensive copies.
+  ```go
+  // ✅ DO: Pass pointers when modification is needed.
+  func increment(val *int) {
+      *val++
+  }
+  // x := 1
+  // increment(&x)
+
+  // ✅ DO: Pass values for small, immutable data.
+  func printValue(val int) {
+      fmt.Println(val)
+  }
+  // y := 2
+  // printValue(y)
+  ```
+
+- **Context Propagation**: Always pass `context.Context` as the first argument to functions that might perform I/O, long-running operations, or need cancellation/timeout signals. Do not store `Context` in struct fields.
+  ```go
+  // ✅ DO: Pass context as the first argument.
+  func fetchData(ctx context.Context, url string) ([]byte, error) {
+      req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+      if err != nil { return nil, err }
+      // ...
+      return nil, nil
+  }
+
+  // ❌ DON'T: Store context in structs.
+  // type MyService struct { ctx context.Context }
+  ```

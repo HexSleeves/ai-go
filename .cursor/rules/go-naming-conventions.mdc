@@ -1,0 +1,111 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Go Naming Conventions
+
+- **Package Names**: Use short, all-lowercase, single-word names. Avoid underscores or hyphens. The package name should reflect its purpose.
+  ```go
+  // ✅ DO: Short, single-word package names.
+  package http
+  package auth
+  package users
+
+  // ❌ DON'T: Long, hyphenated, or plural package names.
+  // package my_http_server
+  // package authentication
+  // package user_management
+  ```
+
+- **Variable Names**: Use short, descriptive names. For loop variables or temporary values, single letters are fine. For longer-lived variables, use more descriptive names. Acronyms (like `URL`, `HTTP`, `ID`) should be consistently cased.
+  ```go
+  // ✅ DO: Short, descriptive variable names.
+  var count int
+  var userID string
+  for i := 0; i < len(list); i++ {
+      // ...
+  }
+  resp, err := http.Get(url)
+
+  // ❌ DON'T: Overly verbose or cryptic names.
+  // var totalNumberOfUsers int
+  // var usrIDStr string
+  ```
+
+- **Function Names**: Use mixedCase (camelCase) for function names. Exported functions (starting with an uppercase letter) should be descriptive of their action or what they return. Unexported functions (starting with a lowercase letter) are internal to the package.
+  ```go
+  // ✅ DO: Descriptive function names with appropriate casing.
+  func GetUserByID(id string) (*User, error) {
+      // ...
+  }
+  func calculateSum(a, b int) int {
+      // ...
+  }
+
+  // ❌ DON'T: Underscores, non-descriptive, or inconsistent casing.
+  // func get_user_by_id(id string)
+  // func cS(a, b int)
+  ```
+
+- **Type Names (Structs and Interfaces)**: Use mixedCase (camelCase) for struct field names. For struct and interface types, use descriptive names that reflect their purpose, typically nouns or noun phrases.
+  ```go
+  // ✅ DO: Descriptive type names.
+  type UserProfile struct {
+      Name    string
+      Email   string
+      Created time.Time
+  }
+
+  type DataStore interface {
+      Save(data []byte) error
+  }
+
+  // ❌ DON'T: Generic or unclear type names.
+  // type User struct { /* ... */ }
+  // type Store interface { /* ... */ }
+  ```
+
+- **Receiver Names**: For methods, use short, consistent single-letter or two-letter receiver names that represent the type. This is particularly important for consistency within a package.
+  ```go
+  // ✅ DO: Short, consistent receiver names.
+  func (u *User) GetFullName() string {
+      return u.FirstName + " " + u.LastName
+  }
+
+  // ❌ DON'T: Long or inconsistent receiver names.
+  // func (thisUser *User) GetFullName() string
+  // func (ur *User) GetFullName() string // if another method uses 'u'
+  ```
+
+- **Interface Naming (Single Method)**: If an interface has a single method, the interface name should typically be the method name plus the suffix `er` (e.g., `Reader`, `Writer`, `Closer`).
+  ```go
+  // ✅ DO: Use 'er' suffix for single-method interfaces.
+  type Reader interface {
+      Read(p []byte) (n int, err error)
+  }
+
+  // ❌ DON'T: Generic interface name that doesn't reflect its single method.
+  // type DataProcessor interface {
+  //     Process(data []byte) error
+  // }
+  ```
+
+- **Avoid Naming Collisions (Shadowing)**: Be mindful of variable shadowing, where a new variable with the same name as an outer-scope variable is declared, potentially leading to bugs. Linters can help catch this.
+  ```go
+  // ✅ DO: Use distinct names or explicitly reassign.
+  var count int = 10
+  if true {
+      newCount := 20 // new variable
+      fmt.Println(newCount)
+  }
+  fmt.Println(count)
+
+  // ❌ DON'T: Unintentionally shadow variables.
+  // var count int = 10
+  // if true {
+  //     count := 20 // This declares a *new* 'count' variable in this scope
+  //     fmt.Println(count)
+  // }
+  // fmt.Println(count) // This will still print 10
+  ```

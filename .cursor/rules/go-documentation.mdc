@@ -1,0 +1,83 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Go Documentation Best Practices
+
+- **Document Exported Identifiers**: Every exported (public) identifier (variables, constants, functions, types, struct fields) must have a doc comment immediately preceding its declaration. The comment should start with the name of the identifier.
+  ```go
+  // ✅ DO: Document exported identifiers.
+  // Client represents an HTTP client.
+  type Client struct {
+      // Timeout specifies the maximum time a request will wait.
+      Timeout time.Duration
+  }
+
+  // GetUser fetches a user by their ID.
+  func GetUser(id string) (*User, error) {
+      // ...
+  }
+
+  // ❌ DON'T: Leave exported identifiers undocumented.
+  // type Client struct {
+  //     Timeout time.Duration
+  // }
+  // func GetUser(id string) (*User, error) {
+  //     // ...
+  // }
+  ```
+
+- **Package-Level Documentation**: Every package should have a package-level comment (a comment immediately preceding the `package` clause in one of the package's `.go` files, usually `doc.go` or the main file). This comment provides a summary of the package's purpose.
+  ```go
+  // ✅ DO: Provide package-level documentation.
+  // Package http provides HTTP client and server implementations.
+  package http
+
+  // ❌ DON'T: Omit package documentation.
+  // package main
+  ```
+
+- **Concise and Informative Comments**: Comments should be concise, clear, and informative. They should explain *what* the code does and, more importantly, *why* it does it, especially for complex logic or non-obvious design choices.
+  ```go
+  // ✅ DO: Explain the purpose and behavior.
+  // parseInput parses the raw input string and returns a structured data representation.
+  // It handles various encoding types and performs basic validation.
+  func parseInput(input string) (Data, error) {
+      // ...
+  }
+
+  // ❌ DON'T: Restate the obvious or use verbose, unhelpful comments.
+  // // This function parses the input.
+  // func parseInput(input string) (Data, error) {
+  //     // ...
+  // }
+  ```
+
+- **Examples in Documentation**: For complex functions or APIs, provide example usage within the documentation. Go's `go doc` tool can automatically run and test these examples, ensuring they remain correct.
+  ```go
+  // ✅ DO: Include examples where helpful.
+  // Package stringutil provides utility functions for string manipulation.
+  //
+  // Example:
+  //   fmt.Println(stringutil.Reverse("hello")) // olleh
+  package stringutil
+
+  // Reverse reverses a string.
+  func Reverse(s string) string {
+      r := []rune(s)
+      for i, j := 0, len(r)-1; i < len(r)/2; i, j = i+1, j-1 {
+          r[i], r[j] = r[j], r[i]
+      }
+      return string(r)
+  }
+  ```
+
+- **No Redundant Comments**: Avoid comments that simply re-state what the code already clearly expresses. Good code is self-documenting.
+  ```go
+  // ✅ DO: Let clear code speak for itself.
+  x := 10 + 5 // No comment needed here
+
+  // ❌ DON'T: Add comments that just repeat the code.
+  // x := 10 + 5 // x is assigned the sum of 10 and 5
+  ```

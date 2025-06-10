@@ -1,0 +1,118 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Go Testing Best Practices
+
+- **Write Unit Tests**: Every significant function or method should have corresponding unit tests to ensure correctness and prevent regressions. Tests should be self-contained and run quickly.
+  ```go
+  // ✅ DO: Write unit tests for your functions.
+  func Add(a, b int) int {
+      return a + b
+  }
+
+  func TestAdd(t *testing.T) {
+      if Add(1, 2) != 3 {
+          t.Errorf("Add(1, 2) = %d; want 3", Add(1, 2))
+      }
+  }
+
+  // ❌ DON'T: Leave core logic untested.
+  // func Subtract(a, b int) int {
+  //     return a - b
+  // }
+  // (no tests for Subtract)
+  ```
+
+- **Table-Driven Tests**: Use table-driven tests for multiple test cases, especially when testing functions with various inputs and expected outputs. This makes tests more concise and readable.
+  ```go
+  // ✅ DO: Use table-driven tests for multiple cases.
+  func TestDivide(t *testing.T) {
+      tests := []struct {
+          name string
+          a, b int
+          want int
+          wantErr bool
+      }{
+          {"positive", 6, 2, 3, false},
+          {"zero_divisor", 1, 0, 0, true},
+          {"negative", -6, 3, -2, false},
+      }
+
+      for _, tt := range tests {
+          t.Run(tt.name, func(t *testing.T) {
+              got, err := Divide(tt.a, tt.b)
+              if (err != nil) != tt.wantErr {
+                  t.Errorf("Divide() error = %v, wantErr %v", err, tt.wantErr)
+                  return
+              }
+              if got != tt.want {
+                  t.Errorf("Divide() = %v, want %v", got, tt.want)
+              }
+          })
+      }
+  }
+  ```
+
+- **Test File Naming**: Name test files `_test.go` and place them in the same package as the code they are testing. For integration tests that need to import the package as an external client, use `_test` suffix for package name (e.g., `package mypackage_test`).
+  ```go
+  // ✅ DO: Name test files correctly and use appropriate package.
+  // my_package.go
+  // my_package_test.go (package mypackage)
+
+  // my_package_integration_test.go (package mypackage_test)
+  ```
+
+- **Use Mocks and Interfaces for Dependencies**: When testing a component that has external dependencies (e.g., database, API calls), use interfaces to define those dependencies and provide mock implementations during testing. This ensures unit tests are isolated and fast.
+  ```go
+  // ✅ DO: Use interfaces and mocks for dependencies.
+  type Greeter interface {
+      Greet(name string) string
+  }
+
+  type MyGreeter struct{}
+  func (m *MyGreeter) Greet(name string) string { return "Hello " + name }
+
+  type UserService struct {
+      greeter Greeter
+  }
+
+  func (us *UserService) GetGreeting(name string) string {
+      return us.greeter.Greet(name)
+  }
+
+  func TestUserService(t *testing.T) {
+      mockGreeter := &MockGreeter{}
+      mockGreeter.On("Greet", "World").Return("Mock Hello World")
+
+      service := &UserService{greeter: mockGreeter}
+      got := service.GetGreeting("World")
+      if got != "Mock Hello World" {
+          t.Errorf("GetGreeting() = %s, want %s", got, "Mock Hello World")
+      }
+      mockGreeter.AssertExpectations(t)
+  }
+
+  // ❌ DON'T: Test with real external dependencies in unit tests.
+  // (This makes tests slow, flaky, and not truly 'unit' tests)
+  // type UserService struct {
+  //     db *sql.DB
+  // }
+  // func TestUserService(t *testing.T) {
+  //     // connect to real database
+  //     service := &UserService{db: realDB}
+  //     // ...
+  // }
+  ```
+
+- **Run Tests with `go test`**: Always run tests using `go test ./...` from the module root to ensure all tests are discovered and run. Use flags like `-v` for verbose output or `-run` to target specific tests.
+  ```bash
+  # ✅ DO: Run all tests in the module.
+  go test ./...
+
+  # ✅ DO: Run specific tests.
+  go test -v ./mypackage -run TestMyFunction
+
+  # ❌ DON'T: Manually execute test functions or rely on IDE-only test runners.
+  ```
