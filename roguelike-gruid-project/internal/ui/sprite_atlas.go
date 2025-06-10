@@ -204,11 +204,11 @@ var (
 	KenneyOrc      = gruid.Point{X: 26, Y: 2}  // Orc warrior
 	KenneyGoblin   = gruid.Point{X: 13, Y: 19} // Goblin
 	KenneySkeleton = gruid.Point{X: 15, Y: 19} // Skeleton
-	KenneyDragon   = gruid.Point{X: 53, Y: 18} // Dragon (large creature)
-	KenneyBat      = gruid.Point{X: 51, Y: 18} // Bat
-	KenneySpider   = gruid.Point{X: 52, Y: 18} // Spider
-	KenneyRat      = gruid.Point{X: 50, Y: 18} // Rat
-	KenneySnake    = gruid.Point{X: 49, Y: 18} // Snake
+	KenneyDragon   = gruid.Point{X: 28, Y: 8}  // Dragon (large creature)
+	KenneyBat      = gruid.Point{X: 46, Y: 18} // Bat
+	KenneySpider   = gruid.Point{X: 47, Y: 18} // Spider
+	KenneyRat      = gruid.Point{X: 45, Y: 18} // Rat
+	KenneySnake    = gruid.Point{X: 44, Y: 18} // Snake
 
 	// Environment tiles - Walls, floors, doors scattered throughout
 	KenneyWall       = gruid.Point{X: 0, Y: 13} // Stone wall
@@ -221,26 +221,26 @@ var (
 	KenneyStairsUp   = gruid.Point{X: 7, Y: 2}  // Stairs going up
 
 	// Items - Potions, weapons, armor, etc.
-	KenneyPotionRed   = gruid.Point{X: 9, Y: 23}  // Red health potion
-	KenneyPotionBlue  = gruid.Point{X: 10, Y: 23} // Blue mana potion
-	KenneyPotionGreen = gruid.Point{X: 11, Y: 23} // Green poison potion
-	KenneyScroll      = gruid.Point{X: 6, Y: 23}  // Magic scroll
-	KenneyBook        = gruid.Point{X: 7, Y: 23}  // Spellbook
+	KenneyPotionRed   = gruid.Point{X: 39, Y: 11} // Red health potion
+	KenneyPotionBlue  = gruid.Point{X: 42, Y: 11} // Blue mana potion
+	KenneyPotionGreen = gruid.Point{X: 43, Y: 11} // Green poison potion
+	KenneyScroll      = gruid.Point{X: 33, Y: 15} // Magic scroll
+	KenneyBook        = gruid.Point{X: 34, Y: 15} // Spellbook
 	KenneySword       = gruid.Point{X: 32, Y: 8}  // Iron sword
-	KenneySwordGold   = gruid.Point{X: 1, Y: 29}  // Golden sword
-	KenneyDagger      = gruid.Point{X: 2, Y: 29}  // Dagger
-	KenneyBow         = gruid.Point{X: 3, Y: 29}  // Bow
-	KenneyShield      = gruid.Point{X: 6, Y: 29}  // Wooden shield
-	KenneyShieldMetal = gruid.Point{X: 7, Y: 29}  // Metal shield
-	KenneyArmor       = gruid.Point{X: 8, Y: 29}  // Chest armor
-	KenneyHelmet      = gruid.Point{X: 9, Y: 29}  // Helmet
-	KenneyCoin        = gruid.Point{X: 9, Y: 26}  // Gold coin
-	KenneyGem         = gruid.Point{X: 10, Y: 26} // Precious gem
-	KenneyKey         = gruid.Point{X: 11, Y: 26} // Key
-	KenneyChest       = gruid.Point{X: 12, Y: 26} // Treasure chest
-	KenneyFood        = gruid.Point{X: 13, Y: 26} // Food/bread
-	KenneyRing        = gruid.Point{X: 14, Y: 26} // Magic ring
-	KenneyAmulet      = gruid.Point{X: 15, Y: 26} // Amulet
+	KenneySwordGold   = gruid.Point{X: 0, Y: 19}  // Golden sword
+	KenneyDagger      = gruid.Point{X: 1, Y: 19}  // Dagger
+	KenneyBow         = gruid.Point{X: 2, Y: 19}  // Bow
+	KenneyShield      = gruid.Point{X: 3, Y: 19}  // Wooden shield
+	KenneyShieldMetal = gruid.Point{X: 4, Y: 19}  // Metal shield
+	KenneyArmor       = gruid.Point{X: 5, Y: 19}  // Chest armor
+	KenneyHelmet      = gruid.Point{X: 6, Y: 19}  // Helmet
+	KenneyCoin        = gruid.Point{X: 8, Y: 17}  // Gold coin
+	KenneyGem         = gruid.Point{X: 9, Y: 17}  // Precious gem
+	KenneyKey         = gruid.Point{X: 10, Y: 17} // Key
+	KenneyChest       = gruid.Point{X: 11, Y: 17} // Treasure chest
+	KenneyFood        = gruid.Point{X: 12, Y: 17} // Food/bread
+	KenneyRing        = gruid.Point{X: 13, Y: 17} // Magic ring
+	KenneyAmulet      = gruid.Point{X: 14, Y: 17} // Amulet
 )
 
 // RuneToSpriteMapping maps game runes directly to sprite atlas coordinates

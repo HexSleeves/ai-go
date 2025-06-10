@@ -38,6 +38,15 @@ func init() {
 		logrus.Info("Using font-based tile rendering")
 	}
 
+	// Log the actual tile size being used
+	tileSize := currentTileManager.TileSize()
+	logrus.Infof("Tile size: %dx%d pixels", tileSize.X, tileSize.Y)
+
+	// Calculate expected window size
+	expectedWidth := config.DungeonWidth * tileSize.X
+	expectedHeight := config.DungeonHeight * tileSize.Y
+	logrus.Infof("Expected window size: %dx%d pixels", expectedWidth, expectedHeight)
+
 	dr := sdl.NewDriver(sdl.Config{
 		TileManager: currentTileManager,
 	})

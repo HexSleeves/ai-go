@@ -16,7 +16,7 @@ var driver gruid.Driver
 func init() {
 	// Initialize JavaScript driver for WebAssembly builds
 	dr := js.NewDriver(js.Config{
-		TileSize: 24, // Use a reasonable tile size for web
+		TileSize: 16, // Use a reasonable tile size for web
 	})
 	driver = dr
 }

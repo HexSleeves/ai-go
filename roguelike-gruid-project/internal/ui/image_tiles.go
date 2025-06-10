@@ -134,6 +134,7 @@ func (itm *ImageTileManager) shouldUseSprite(r rune) bool {
 func (itm *ImageTileManager) TileSize() gruid.Point {
 	size := itm.config.TileSize
 	scale := itm.config.ScaleFactor
+
 	return gruid.Point{
 		X: int(float32(size) * scale),
 		Y: int(float32(size) * scale),
