@@ -1,43 +1,58 @@
 package config
 
 import (
-	"flag"
+	"fmt"
 	"os"
+	"path/filepath"
+	"time"
 
 	"github.com/sirupsen/logrus"
 )
 
-// GameConfig holds the configuration for the game
-type GameConfig struct {
-	DebugLogging bool
-	Tiles        TileConfig
-}
-
-// ParseFlags parses command-line flags and returns a GameConfig
-func ParseFlags() *GameConfig {
-	config := &GameConfig{
-		Tiles: LoadTileConfig(), // Load tile configuration
-	}
-	flag.BoolVar(&config.DebugLogging, "debug", false, "Enable debug logging")
-	flag.BoolVar(&config.DebugLogging, "d", false, "Enable debug logging (shorthand)")
-	flag.BoolVar(&config.Tiles.Enabled, "tiles", config.Tiles.Enabled, "Enable tile-based rendering")
-	flag.Parse()
-	if config.DebugLogging {
-		logrus.SetLevel(logrus.DebugLevel)
-		logrus.SetOutput(os.Stdout)
-		logrus.Debug("Debug logging enabled")
-	} else {
-		logrus.SetLevel(logrus.InfoLevel)
-		logrus.SetOutput(os.Stdout)
-	}
-
-	return config
-}
-
 // Global configuration instance
-var Config *GameConfig
+var Config *FullConfig
 
 // Init initializes the configuration
 func Init() {
-	Config = ParseFlags()
+	var err error
+	Config, err = LoadConfig()
+	if err != nil {
+		logrus.Fatalf("Failed to load game config: %v", err)
+	}
+
+	// Set log level based on config
+	switch Config.Advanced.LogLevel {
+	case "debug":
+		logrus.SetLevel(logrus.DebugLevel)
+	case "info":
+		logrus.SetLevel(logrus.InfoLevel)
+	case "warn":
+		logrus.SetLevel(logrus.WarnLevel)
+	case "error":
+		logrus.SetLevel(logrus.ErrorLevel)
+	default:
+		logrus.SetLevel(logrus.InfoLevel)
+	}
+
+	// Set log output to file if enabled
+	if Config.Advanced.LogToFile {
+		// Ensure the logs directory exists
+		logDir := "logs"
+		if err := os.MkdirAll(logDir, 0755); err != nil {
+			logrus.Fatalf("Failed to create log directory: %v", err)
+		}
+
+		// Create a log file with a timestamp
+		logFilePath := filepath.Join(logDir, fmt.Sprintf("game_%s.log", time.Now().Format("20060102_150405")))
+		file, err := os.OpenFile(logFilePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+		if err == nil {
+			logrus.SetOutput(file)
+		} else {
+			logrus.Infof("Failed to log to file, using default stderr: %v", err)
+		}
+	} else {
+		logrus.SetOutput(os.Stdout)
+	}
+
+	logrus.Infof("Game config loaded - Debug mode: %v, Log level: %s", Config.Advanced.DebugMode, Config.Advanced.LogLevel)
 }

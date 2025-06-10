@@ -37,6 +37,8 @@ type GameplayConfig struct {
 	RoomMaxSize        int `json:"room_max_size"`
 	MaxRooms           int `json:"max_rooms"`
 	MaxMonstersPerRoom int `json:"max_monsters_per_room"`
+	DungeonWidth       int `json:"dungeon_width"`
+	DungeonHeight      int `json:"dungeon_height"`
 }
 
 // DisplayConfig holds display-related settings
@@ -48,10 +50,16 @@ type DisplayConfig struct {
 	VSync        bool `json:"vsync"`
 
 	// Graphics settings
-	TileSize    int    `json:"tile_size"`
-	FontSize    int    `json:"font_size"`
-	FontPath    string `json:"font_path"`
-	ColorScheme string `json:"color_scheme"` // "classic", "modern", "high_contrast"
+	TileSize     int     `json:"tile_size"`
+	FontSize     int     `json:"font_size"`
+	FontPath     string  `json:"font_path"`
+	ColorScheme  string  `json:"color_scheme"` // "classic", "modern", "high_contrast"
+	TilesEnabled bool    `json:"tiles_enabled"`
+	TilesetPath  string  `json:"tileset_path"`
+	ScaleFactorX float32 `json:"scale_factor_x"`
+	ScaleFactorY float32 `json:"scale_factor_y"`
+	UseSmoothing bool    `json:"use_smoothing"`
+	CacheSize    int     `json:"cache_size"`
 
 	// UI settings
 	ShowFPS        bool `json:"show_fps"`
@@ -149,6 +157,8 @@ func DefaultConfig() FullConfig {
 			RoomMaxSize:             10,
 			MaxRooms:                10,
 			MaxMonstersPerRoom:      2,
+			DungeonWidth:            80,
+			DungeonHeight:           24,
 		},
 		Display: DisplayConfig{
 			WindowWidth:    1280, // 80 chars * 16 pixels = 1280
@@ -156,15 +166,21 @@ func DefaultConfig() FullConfig {
 			Fullscreen:     false,
 			VSync:          true,
 			TileSize:       16,
-			FontSize:       12,
+			FontSize:       24,
 			FontPath:       "",
 			ColorScheme:    "classic",
-			ShowFPS:        false,
+			ShowFPS:        true,
 			ShowMinimap:    true,
 			MessageLogSize: 50,
 			HighContrast:   false,
 			LargeText:      false,
 			ColorBlindMode: "none",
+			TilesEnabled:   true,
+			TilesetPath:    TilesetPath,
+			ScaleFactorX:   1.0,
+			ScaleFactorY:   1.0,
+			UseSmoothing:   true,
+			CacheSize:      1024,
 		},
 		Input: InputConfig{
 			KeyBindings: map[string]string{
@@ -216,6 +232,8 @@ func DefaultConfig() FullConfig {
 const (
 	ConfigDir  = "config"
 	ConfigFile = "game_config.json"
+
+	TilesetPath = "assets/tiles"
 )
 
 // LoadConfig loads configuration from file or creates default

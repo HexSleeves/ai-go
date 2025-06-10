@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"image"
 
+	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/config"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/image/font/gofont/gomono"
 	"golang.org/x/image/font/opentype"
 
@@ -43,7 +45,7 @@ func (t *TileDrawer) TileSize() gruid.Point {
 
 // GetTileDrawer returns a TileDrawer that implements TileManager for the sdl
 // driver, or an error if there were problems setting up the font face.
-func GetTileDrawer() (*TileDrawer, error) {
+func GetTileDrawer(displayConfig config.DisplayConfig) (*TileDrawer, error) {
 	parsedFont, err := opentype.Parse(gomono.TTF)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse font: %w", err)
@@ -52,7 +54,7 @@ func GetTileDrawer() (*TileDrawer, error) {
 	t := &TileDrawer{}
 
 	face, err := opentype.NewFace(parsedFont, &opentype.FaceOptions{
-		Size: 24,
+		Size: float64(displayConfig.FontSize),
 		DPI:  72,
 	})
 	if err != nil {
@@ -63,5 +65,7 @@ func GetTileDrawer() (*TileDrawer, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	logrus.Info("Loaded font gomono.ttf with size ", displayConfig.FontSize)
 	return t, nil
 }

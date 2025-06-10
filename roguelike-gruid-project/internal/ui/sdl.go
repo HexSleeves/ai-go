@@ -15,22 +15,23 @@ var currentTileManager sdl.TileManager
 var fontTileDrawer sdl.TileManager
 var imageTileManager *ImageTileManager
 
-func init() {
-	// Get tile configuration
-	tileConfig := config.LoadTileConfig()
+// InitializeSDL initializes the SDL driver and tile managers
+func InitializeSDL() {
+	// Use the global config instance
+	displayConfig := config.Config.Display
 
 	// Create font-based tile drawer as fallback
 	var err error
-	fontTileDrawer, err = GetTileDrawer()
+	fontTileDrawer, err = GetTileDrawer(displayConfig)
 	if err != nil {
 		logrus.Fatal(err)
 	}
 
 	// Create image tile manager
-	imageTileManager = NewImageTileManager(&tileConfig, fontTileDrawer)
+	imageTileManager = NewImageTileManager(&displayConfig, fontTileDrawer)
 
 	// Choose initial tile manager based on configuration
-	if tileConfig.Enabled {
+	if displayConfig.TilesEnabled {
 		currentTileManager = imageTileManager
 		logrus.Info("Using image-based tile rendering")
 	} else {
@@ -38,44 +39,52 @@ func init() {
 		logrus.Info("Using font-based tile rendering")
 	}
 
+	// Window size
+	logrus.Info("Window size: ", displayConfig.WindowWidth, "x", displayConfig.WindowHeight)
+
 	// Log the actual tile size being used
 	tileSize := currentTileManager.TileSize()
 	logrus.Infof("Tile size: %dx%d pixels", tileSize.X, tileSize.Y)
 
-	// Calculate expected window size
-	expectedWidth := config.DungeonWidth * tileSize.X
-	expectedHeight := config.DungeonHeight * tileSize.Y
-	logrus.Infof("Expected window size: %dx%d pixels", expectedWidth, expectedHeight)
+	// Font size
+	logrus.Info("Font size: ", displayConfig.FontSize)
 
+	// Use configured window size
 	dr := sdl.NewDriver(sdl.Config{
 		TileManager: currentTileManager,
+		Width:       int32(displayConfig.WindowWidth),
+		Height:      int32(displayConfig.WindowHeight),
+		Fullscreen:  displayConfig.Fullscreen,
+		WindowTitle: "Roguelike",
+		Accelerated: false,
 	})
 
-	//dr.SetScale(2.0, 2.0)
+	dr.SetScale(displayConfig.ScaleFactorX, displayConfig.ScaleFactorY)
 	dr.PreventQuit()
+
 	driver = dr
 }
 
 // ToggleTileMode switches between image-based and font-based tile rendering
 func ToggleTileMode() error {
-	// Load current configuration
-	tileConfig := config.LoadTileConfig()
+	// Get current configuration
+	currentConfig := config.Config
 
 	// Toggle the enabled state
-	tileConfig.Enabled = !tileConfig.Enabled
+	currentConfig.Display.TilesEnabled = !currentConfig.Display.TilesEnabled
 
 	// Save the new configuration
-	if err := config.SaveTileConfig(tileConfig); err != nil {
+	if err := config.SaveConfig(currentConfig); err != nil {
 		return err
 	}
 
 	// Update the image tile manager configuration
 	if imageTileManager != nil {
-		imageTileManager.UpdateConfig(&tileConfig)
+		imageTileManager.UpdateConfig(&currentConfig.Display)
 	}
 
 	// Switch tile manager
-	if tileConfig.Enabled {
+	if currentConfig.Display.TilesEnabled {
 		currentTileManager = imageTileManager
 		logrus.Info("Switched to image-based tile rendering")
 	} else {
@@ -83,23 +92,18 @@ func ToggleTileMode() error {
 		logrus.Info("Switched to font-based tile rendering")
 	}
 
-	// Update the SDL driver with the new tile manager
-	if sdlDriver, ok := driver.(*sdl.Driver); ok {
-		// Note: gruid-sdl doesn't have a direct way to change TileManager at runtime
-		// This would require reinitializing the driver, which is complex
-		// For now, we'll just update our internal state and log the change
-		// The change will take effect on next restart
-		logrus.Info("Tile mode change will take effect on next restart")
-		_ = sdlDriver // Avoid unused variable warning
-	}
+	// Note: gruid-sdl doesn't have a direct way to change TileManager at runtime
+	// This would require reinitializing the driver, which is complex
+	// For now, we'll just update our internal state and log the change
+	// The change will take effect on next restart
+	logrus.Info("Tile mode change will take effect on next restart")
 
 	return nil
 }
 
 // GetCurrentTileMode returns whether tile mode is currently enabled
 func GetCurrentTileMode() bool {
-	tileConfig := config.LoadTileConfig()
-	return tileConfig.Enabled
+	return config.Config.Display.TilesEnabled
 }
 
 // ClearTileCache clears the tile cache (useful when switching tilesets)
@@ -111,9 +115,15 @@ func ClearTileCache() {
 }
 
 // UpdateTileConfig updates the tile configuration and applies changes
-func UpdateTileConfig(newConfig config.TileConfig) error {
+func UpdateTileConfig(newConfig config.DisplayConfig) error {
+	// Get current full config
+	fullConfig := config.Config
+
+	// Update only the Display section
+	fullConfig.Display = newConfig
+
 	// Save the new configuration
-	if err := config.SaveTileConfig(newConfig); err != nil {
+	if err := config.SaveConfig(fullConfig); err != nil {
 		return err
 	}
 

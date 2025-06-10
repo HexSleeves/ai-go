@@ -22,13 +22,13 @@ type ImageTileManager struct {
 	tileCache    map[rune]image.Image
 	coloredCache map[rune]map[gruid.Color]image.Image
 	spriteAtlas  *KenneyRoguelikeAtlas // Sprite atlas for extracting tiles
-	config       *config.TileConfig
+	config       *config.DisplayConfig
 	mutex        sync.RWMutex
 	fontFallback sdl.TileManager // Fallback to font-based rendering
 }
 
 // NewImageTileManager creates a new image-based tile manager
-func NewImageTileManager(config *config.TileConfig, fontFallback sdl.TileManager) *ImageTileManager {
+func NewImageTileManager(config *config.DisplayConfig, fontFallback sdl.TileManager) *ImageTileManager {
 	itm := &ImageTileManager{
 		tileCache:    make(map[rune]image.Image),
 		coloredCache: make(map[rune]map[gruid.Color]image.Image),
@@ -47,8 +47,11 @@ func NewImageTileManager(config *config.TileConfig, fontFallback sdl.TileManager
 
 // loadSpriteAtlas attempts to load the Kenney spritesheet
 func (itm *ImageTileManager) loadSpriteAtlas() {
-	// Try alternative common names for the spritesheet
-	path := filepath.Join(itm.config.TilesetPath, "colored-transparent_packed.png")
+	fileName := "colored-transparent_packed.png"
+
+	logrus.Info("Loading sprite atlas from: ", itm.config.TilesetPath, "/", fileName)
+
+	path := filepath.Join(itm.config.TilesetPath, fileName)
 	if atlas, err := NewKenneyRoguelikeAtlas(path); err == nil {
 		itm.spriteAtlas = atlas
 		logrus.Infof("Loaded sprite atlas from: %s", path)
@@ -61,7 +64,7 @@ func (itm *ImageTileManager) loadSpriteAtlas() {
 // GetImage implements sdl.TileManager.GetImage
 func (itm *ImageTileManager) GetImage(c gruid.Cell) image.Image {
 	// If tiles are disabled, use font fallback
-	if !itm.config.Enabled {
+	if !itm.config.TilesEnabled {
 		if itm.fontFallback != nil {
 			return itm.fontFallback.GetImage(c)
 		}
@@ -133,11 +136,17 @@ func (itm *ImageTileManager) shouldUseSprite(r rune) bool {
 // TileSize implements sdl.TileManager.TileSize
 func (itm *ImageTileManager) TileSize() gruid.Point {
 	size := itm.config.TileSize
-	scale := itm.config.ScaleFactor
+	// scaleX := itm.config.ScaleFactorX
+	// scaleY := itm.config.ScaleFactorY
+
+	// return gruid.Point{
+	// 	X: int(float32(size) * scaleX),
+	// 	Y: int(float32(size) * scaleY),
+	// }
 
 	return gruid.Point{
-		X: int(float32(size) * scale),
-		Y: int(float32(size) * scale),
+		X: size,
+		Y: size,
 	}
 }
 
@@ -239,21 +248,23 @@ func (itm *ImageTileManager) applyColors(baseImg image.Image, fg, bg gruid.Color
 
 // scaleImage scales an image according to the configured scale factor
 func (itm *ImageTileManager) scaleImage(img image.Image) image.Image {
-	if itm.config.ScaleFactor == 1.0 {
+	if itm.config.ScaleFactorX == 1.0 && itm.config.ScaleFactorY == 1.0 {
 		return img
 	}
 
+	logrus.Info("Scaling image by ", itm.config.ScaleFactorX, "x", itm.config.ScaleFactorY)
+
 	bounds := img.Bounds()
-	newWidth := int(float32(bounds.Dx()) * itm.config.ScaleFactor)
-	newHeight := int(float32(bounds.Dy()) * itm.config.ScaleFactor)
+	newWidth := int(float32(bounds.Dx()) * itm.config.ScaleFactorX)
+	newHeight := int(float32(bounds.Dy()) * itm.config.ScaleFactorY)
 
 	scaledImg := image.NewRGBA(image.Rect(0, 0, newWidth, newHeight))
 
 	// Simple nearest-neighbor scaling
-	for y := 0; y < newHeight; y++ {
-		for x := 0; x < newWidth; x++ {
-			srcX := int(float32(x) / itm.config.ScaleFactor)
-			srcY := int(float32(y) / itm.config.ScaleFactor)
+	for y := range newHeight {
+		for x := range newWidth {
+			srcX := int(float32(x) / itm.config.ScaleFactorX)
+			srcY := int(float32(y) / itm.config.ScaleFactorY)
 
 			if srcX < bounds.Max.X && srcY < bounds.Max.Y {
 				scaledImg.Set(x, y, img.At(bounds.Min.X+srcX, bounds.Min.Y+srcY))
@@ -266,8 +277,6 @@ func (itm *ImageTileManager) scaleImage(img image.Image) image.Image {
 
 // generateFallbackImage creates a simple colored rectangle as fallback
 func (itm *ImageTileManager) generateFallbackImage(c gruid.Cell) image.Image {
-	logrus.Warn("Generating fallback image")
-
 	size := itm.TileSize()
 	img := image.NewRGBA(image.Rect(0, 0, size.X, size.Y))
 
@@ -327,7 +336,7 @@ func (itm *ImageTileManager) ClearCache() {
 }
 
 // UpdateConfig updates the tile manager configuration
-func (itm *ImageTileManager) UpdateConfig(newConfig *config.TileConfig) {
+func (itm *ImageTileManager) UpdateConfig(newConfig *config.DisplayConfig) {
 	itm.mutex.Lock()
 	defer itm.mutex.Unlock()
 
@@ -339,13 +348,15 @@ func (itm *ImageTileManager) UpdateConfig(newConfig *config.TileConfig) {
 		itm.loadSpriteAtlas()
 		itm.ClearCache()
 	}
+
+	// Clear caches when config is updated to ensure new settings are applied
+	// if !itm.config.TilesEnabled { // Redundant, handled by ClearCache() already
+	// 	itm.ClearCache()
+	// }
 }
 
-// String returns a string representation for debugging
+// String implements fmt.Stringer for ImageTileManager
 func (itm *ImageTileManager) String() string {
-	itm.mutex.RLock()
-	defer itm.mutex.RUnlock()
-
 	return fmt.Sprintf("ImageTileManager{CachedTiles: %d, ColoredTiles: %d, Enabled: %v}",
-		len(itm.tileCache), len(itm.coloredCache), itm.config.Enabled)
+		len(itm.tileCache), len(itm.coloredCache), itm.config.TilesEnabled)
 }

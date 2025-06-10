@@ -17,18 +17,19 @@ import (
 
 func main() {
 	config.Init()
+	ui.InitializeSDL()
 
 	logrus.SetFormatter(&logrus.TextFormatter{
 		FullTimestamp: true,
 		DisableColors: false,
 	})
 
-	logrus.Infof("Starting roguelike game - Debug mode: %v", config.Config.DebugLogging)
+	logrus.Infof("Starting roguelike game - Debug mode: %v", config.Config.Advanced.DebugMode)
 
 	seed := time.Now().UnixNano()
 	rand.New(rand.NewSource(seed))
 
-	gd := gruid.NewGrid(config.DungeonWidth, config.DungeonHeight)
+	gd := gruid.NewGrid(config.Config.Gameplay.DungeonWidth, config.Config.Gameplay.DungeonHeight)
 	m := game.NewModel(gd)
 
 	driver := ui.GetDriver()
