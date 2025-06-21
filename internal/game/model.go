@@ -5,13 +5,13 @@
 package game
 
 import (
+	"log/slog"
 	"runtime"
 	"time"
 
 	"codeberg.org/anaseto/gruid"
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/ui"
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/utils"
-	"github.com/sirupsen/logrus"
 )
 
 type mode int
@@ -81,17 +81,17 @@ func NewModel(grid gruid.Grid) *Model {
 }
 
 func (md *Model) init() gruid.Effect {
-	logrus.Debug("========= Game Initialization Started =========")
+	slog.Debug("========= Game Initialization Started =========")
 	md.game.InitLevel()
 
-	logrus.Debug("Level initialized")
-	logrus.Debug("About to process turn queue for the first time")
+	slog.Debug("Level initialized")
+	slog.Debug("About to process turn queue for the first time")
 
 	md.game.FOVSystem()
 	md.processTurnQueue()
 
-	logrus.Debug("Initial turn queue processing completed")
-	logrus.Debug("========= Game Initialization Completed =========")
+	slog.Debug("Initial turn queue processing completed")
+	slog.Debug("========= Game Initialization Completed =========")
 
 	if runtime.GOOS == "js" {
 		return nil
@@ -103,7 +103,7 @@ func (md *Model) init() gruid.Effect {
 // EndTurn finalizes player's turn and runs other events until next player
 // turn.
 func (md *Model) EndTurn() gruid.Effect {
-	logrus.Debug("EndTurn called - player finished their turn")
+	slog.Debug("EndTurn called - player finished their turn")
 
 	md.mode = modeNormal
 	g := md.game
@@ -155,11 +155,11 @@ func (md *Model) TogglePathfindingDebug() {
 		if md.showPathfindingDebug {
 			md.game.pathfindingMgr.EnablePathfindingDebug()
 			md.pathfindingDebugInfo = md.game.pathfindingMgr.GetDebugInfo()
-			logrus.Info("Pathfinding debug visualization enabled")
+			slog.Info("Pathfinding debug visualization enabled")
 		} else {
 			md.game.pathfindingMgr.DisablePathfindingDebug()
 			md.pathfindingDebugInfo = nil
-			logrus.Info("Pathfinding debug visualization disabled")
+			slog.Info("Pathfinding debug visualization disabled")
 		}
 	}
 }
@@ -179,7 +179,7 @@ func (md *Model) GetPathfindingDebugInfo() *PathfindingDebugInfo {
 // ToggleFOVDebug toggles FOV debug visualization
 func (md *Model) ToggleFOVDebug() {
 	md.showFOVDebug = !md.showFOVDebug
-	logrus.Infof("FOV debug visualization %s", map[bool]string{true: "enabled", false: "disabled"}[md.showFOVDebug])
+	slog.Info("FOV debug visualization", "enabled", md.showFOVDebug)
 }
 
 // ToggleAIDebug toggles AI debug visualization
@@ -188,10 +188,10 @@ func (md *Model) ToggleAIDebug() {
 
 	if md.showAIDebug {
 		md.aiDebugInfo = md.game.CollectAIDebugInfo()
-		logrus.Info("AI debug visualization enabled")
+		slog.Info("AI debug visualization enabled")
 	} else {
 		md.aiDebugInfo = nil
-		logrus.Info("AI debug visualization disabled")
+		slog.Info("AI debug visualization disabled")
 	}
 }
 
@@ -238,7 +238,7 @@ func (md *Model) CycleDebugLevel() {
 		md.aiDebugInfo = md.game.CollectAIDebugInfo()
 	}
 
-	logrus.Infof("Debug level set to: %s", md.debugLevel.String())
+	slog.Info("Debug level set to", "level", md.debugLevel.String())
 }
 
 // UpdateAIDebug updates AI debug information
@@ -289,7 +289,7 @@ func (md *Model) processEvent(msg gruid.Msg) gruid.Effect {
 			// Print pathfinding statistics
 			if md.game.pathfindingMgr != nil {
 				stats := md.game.pathfindingMgr.GetPathfindingStats()
-				logrus.WithFields(logrus.Fields(stats)).Info("Pathfinding Statistics")
+				slog.Info("Pathfinding Statistics", "stats", stats)
 			}
 			return nil
 		case "F3":

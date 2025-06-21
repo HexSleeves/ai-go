@@ -2,13 +2,13 @@ package game
 
 import (
 	"fmt"
+	"log/slog"
 
 	"codeberg.org/anaseto/gruid" // Needed for FOV type
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/ecs"
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/ecs/components"
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/ui" // For colors
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/utils"
-	"github.com/sirupsen/logrus"
 )
 
 // renderOrder is a type representing the priority of an entity rendering.
@@ -79,7 +79,7 @@ func (md *Model) Draw() gruid.Grid {
 	playerFOVComp := g.ecs.GetFOVSafe(g.PlayerID)
 	if playerFOVComp == nil {
 		// Handle case where player FOV might be missing (though unlikely)
-		logrus.Errorf("Player entity %d missing FOV component in Draw", g.PlayerID)
+		slog.Error("Player entity missing FOV component in Draw", "id", g.PlayerID)
 		return md.grid // Return the grid even if FOV is missing
 	}
 

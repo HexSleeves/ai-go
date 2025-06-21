@@ -2,12 +2,12 @@ package game
 
 import (
 	"fmt"
+	"log/slog"
 
 	"codeberg.org/anaseto/gruid"
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/ecs"
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/ecs/components"
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/ui"
-	"github.com/sirupsen/logrus"
 )
 
 // GameAction is an interface for actions that can be performed in the game.
@@ -59,7 +59,7 @@ func (a AttackAction) Execute(g *Game) (cost uint, err error) {
 	targetHealthOpt := g.ecs.GetHealthOpt(a.TargetID)
 	if targetHealthOpt.IsNone() {
 		// Target might have died between action queuing and execution
-		logrus.Debugf("%s (%d) tries to attack %s (%d), but target has no health component.", attackerName, a.AttackerID, targetName, a.TargetID)
+		slog.Debug("Attacker tries to attack target, but target has no health component", "attacker", attackerName, "attackerId", a.AttackerID, "target", targetName, "targetId", a.TargetID)
 		return 0, fmt.Errorf("target %d has no health", a.TargetID)
 	}
 
@@ -87,11 +87,7 @@ func (a AttackAction) Execute(g *Game) (cost uint, err error) {
 	}
 	g.log.AddMessagef(msgColor, "%s attacks %s for %d damage.", attackerName, targetName, damage)
 
-	logrus.Infof("%s (%d) attacks %s (%d) for %d damage. %s HP: %d/%d",
-		attackerName, a.AttackerID,
-		targetName, a.TargetID,
-		damage,
-		targetName, targetHealth.CurrentHP, targetHealth.MaxHP)
+	slog.Info("Combat action", "attacker", attackerName, "attackerId", a.AttackerID, "target", targetName, "targetId", a.TargetID, "damage", damage, "targetHP", targetHealth.CurrentHP, "targetMaxHP", targetHealth.MaxHP)
 	g.ecs.AddComponent(a.TargetID, components.CHealth, targetHealth)
 
 	// Check for death (CurrentHP <= 0) and handle it
@@ -106,11 +102,11 @@ func (a AttackAction) Execute(g *Game) (cost uint, err error) {
 // or turning it into a corpse (the preferred option)
 func (g *Game) handleEntityDeath(entityID ecs.EntityID, entityName string, killerID ecs.EntityID) {
 	g.log.AddMessagef(ui.ColorDeath, "%s dies!", entityName)
-	logrus.Infof("Entity %s (%d) has died.", entityName, entityID)
+	slog.Info("Entity has died", "entityName", entityName, "entityId", entityID)
 
 	if entityID == g.PlayerID {
 		g.log.AddMessagef(ui.ColorCritical, "You died! Game over!")
-		logrus.Info("Player has died. Game over!")
+		slog.Info("Player has died. Game over!")
 		g.setGameOverState()
 		return
 	}

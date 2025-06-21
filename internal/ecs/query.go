@@ -1,9 +1,10 @@
 package ecs
 
 import (
+	"log/slog"
+
 	"codeberg.org/anaseto/gruid"
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/ecs/components"
-	"github.com/sirupsen/logrus"
 )
 
 // Helper method that doesn't acquire a lock (for use in methods that already have the lock)
@@ -113,10 +114,10 @@ func (ecs *ECS) GetEntitiesWithPositionAndRenderable() []PositionedRenderableEnt
 		pos, posOk := ecs.GetPosition(id)
 		renderable, renderableOk := ecs.GetRenderable(id)
 		if !posOk {
-			logrus.Errorf("Entity %d has Position component but no position", id)
+			slog.Error("Entity has Position component but no position", "entityId", id)
 		}
 		if !renderableOk {
-			logrus.Errorf("Entity %d has Renderable component but no renderable", id)
+			slog.Error("Entity has Renderable component but no renderable", "entityId", id)
 		}
 
 		result = append(result, PositionedRenderableEntity{
@@ -145,10 +146,10 @@ func (ecs *ECS) GetEntitiesWithPositionAndFOV() []PositionedFOVEntity {
 		fov, fovOk := ecs.GetFOV(id)
 
 		if !posOk {
-			logrus.Errorf("Entity %d has Position component but no position", id)
+			slog.Error("Entity has Position component but no position", "entityId", id)
 		}
 		if !fovOk {
-			logrus.Errorf("Entity %d has FOV component but no FOV", id)
+			slog.Error("Entity has FOV component but no FOV", "entityId", id)
 		}
 
 		result = append(result, PositionedFOVEntity{

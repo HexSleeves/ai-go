@@ -2,12 +2,12 @@ package game
 
 import (
 	"fmt"
+	"log/slog"
 	"math/rand"
 
 	"codeberg.org/anaseto/gruid"
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/ecs"
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/ecs/components"
-	"github.com/sirupsen/logrus"
 )
 
 // monstersTurn handles AI turns for all monsters in the game.
@@ -34,7 +34,7 @@ func (g *Game) monstersTurn() {
 		// Check monster's FOV using safe accessor
 		monsterFOVComp := g.ecs.GetFOVSafe(id)
 		if monsterFOVComp == nil {
-			logrus.Errorf("Monster entity %d missing FOV component in monstersTurn", id)
+			slog.Error("Monster entity missing FOV component in monstersTurn", "id", id)
 			continue
 		}
 
@@ -47,14 +47,14 @@ func (g *Game) monstersTurn() {
 			// Check if monster can see player
 			playerPos := g.GetPlayerPosition()
 			if monsterFOVComp.IsVisible(playerPos, g.dungeon.Width) {
-				logrus.Infof("Monster %d can see player, attacking", id)
+				slog.Info("Monster can see player, attacking", "id", id)
 
 				// Use safe accessor - no error handling needed!
 				pos := g.ecs.GetPositionSafe(id)
 
 				// Skip if entity doesn't have position component
 				if !g.ecs.HasPositionSafe(id) {
-					logrus.Errorf("Monster entity %d missing position in monstersTurn", id)
+					slog.Error("Monster entity missing position in monstersTurn", "id", id)
 					continue
 				}
 
@@ -65,7 +65,7 @@ func (g *Game) monstersTurn() {
 					var err error
 					action, err = moveMonster(g, id)
 					if err != nil {
-						logrus.Debugf("Failed to move monster %d: %v", id, err)
+						slog.Debug("Failed to move monster", "id", id, "error", err)
 						continue
 					}
 				} else {
@@ -106,14 +106,14 @@ func moveMonster(g *Game, id ecs.EntityID) (GameAction, error) {
 		}
 	}
 	if validMove != nil {
-		logrus.Debugf("AI entity %d moving in direction %v", id, validMove)
+		slog.Debug("AI entity moving in direction", "id", id, "direction", validMove)
 		action := MoveAction{
 			Direction: *validMove,
 			EntityID:  id,
 		}
 		return action, nil
 	} else {
-		logrus.Debugf("AI entity %d has no valid move, waiting", id)
+		slog.Debug("AI entity has no valid move, waiting", "id", id)
 		return WaitAction{EntityID: id}, nil
 	}
 }

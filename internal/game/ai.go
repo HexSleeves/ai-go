@@ -1,12 +1,12 @@
 package game
 
 import (
+	"log/slog"
 	"math/rand"
 
 	"codeberg.org/anaseto/gruid"
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/ecs"
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/ecs/components"
-	"github.com/sirupsen/logrus"
 )
 
 // AdvancedMonsterAI handles more sophisticated monster AI
@@ -312,7 +312,7 @@ func (g *Game) basicMonsterAI(entityID ecs.EntityID) GameAction {
 	// This would be the existing monster AI logic
 	action, err := moveMonster(g, entityID)
 	if err != nil {
-		logrus.Debugf("Failed to move monster %d: %v", entityID, err)
+		slog.Debug("Failed to move monster", "entityID", entityID, "error", err)
 		return WaitAction{EntityID: entityID}
 	}
 	return action
@@ -377,7 +377,7 @@ func (g *Game) AdvancedMonsterAIWithUpdate(entityID ecs.EntityID) GameAction {
 	})
 
 	if err != nil {
-		logrus.Errorf("Failed to update AI component for entity %d: %v", entityID, err)
+		slog.Error("Failed to update AI component for entity", "entityID", entityID, "error", err)
 		return g.basicMonsterAI(entityID)
 	}
 

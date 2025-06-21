@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"image"
 	"image/draw"
+	"log/slog"
 	"path/filepath"
 	"sync"
 
@@ -14,7 +15,6 @@ import (
 	sdl "codeberg.org/anaseto/gruid-sdl"
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/config"
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/constants"
-	"github.com/sirupsen/logrus"
 )
 
 // ImageTileManager implements sdl.TileManager for image-based tiles
@@ -49,16 +49,16 @@ func NewImageTileManager(config *config.DisplayConfig, fontFallback sdl.TileMana
 func (itm *ImageTileManager) loadSpriteAtlas() {
 	fileName := "colored-transparent_packed.png"
 
-	logrus.Info("Loading sprite atlas from: ", itm.config.TilesetPath, "/", fileName)
+	slog.Info("Loading sprite atlas from: ", itm.config.TilesetPath, "/", fileName)
 
 	path := filepath.Join(itm.config.TilesetPath, fileName)
 	if atlas, err := NewKenneyRoguelikeAtlas(path); err == nil {
 		itm.spriteAtlas = atlas
-		logrus.Infof("Loaded sprite atlas from: %s", path)
+		slog.Info("Loaded sprite atlas from: %s", path)
 		return
 	}
 
-	logrus.Warn("No sprite atlas found. Place Kenney's spritesheet as 'colored-transparent_packed.png' in the tileset directory")
+	slog.Warn("No sprite atlas found. Place Kenney's spritesheet as 'colored-transparent_packed.png' in the tileset directory")
 }
 
 // GetImage implements sdl.TileManager.GetImage
@@ -254,7 +254,7 @@ func (itm *ImageTileManager) scaleImage(img image.Image) image.Image {
 		return img
 	}
 
-	logrus.Info("Scaling image by ", itm.config.ScaleFactorX, "x", itm.config.ScaleFactorY)
+	slog.Info("Scaling image by", "scaleX", itm.config.ScaleFactorX, "scaleY", itm.config.ScaleFactorY)
 
 	bounds := img.Bounds()
 	newWidth := int(float32(bounds.Dx()) * itm.config.ScaleFactorX)

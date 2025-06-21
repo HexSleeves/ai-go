@@ -2,12 +2,12 @@ package ecs
 
 import (
 	"fmt"
+	"log/slog"
 	"reflect"
 	"sync"
 
 	"codeberg.org/anaseto/gruid"
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/ecs/components"
-	"github.com/sirupsen/logrus"
 )
 
 // EntityID represents a unique identifier for an entity.
@@ -175,7 +175,7 @@ func (ecs *ECS) HasComponent(id EntityID, compType components.ComponentType) boo
 // AddComponent adds or updates a component for an entity.
 func (ecs *ECS) AddComponent(id EntityID, compType components.ComponentType, component any) {
 	if !ecs.EntityExists(id) {
-		logrus.Debugf("Warning: Attempted to add component %s to non-existent entity %d", compType, id)
+		slog.Debug("Warning: Attempted to add component to non-existent entity", "componentType", compType, "entityId", id)
 		return
 	}
 
@@ -191,7 +191,7 @@ func (ecs *ECS) AddComponent(id EntityID, compType components.ComponentType, com
 // AddComponents adds multiple components to an entity at once.
 func (ecs *ECS) AddComponents(id EntityID, comps ...any) {
 	if !ecs.EntityExists(id) {
-		logrus.Debugf("Warning: Attempted to add components to non-existent entity %d", id)
+		slog.Debug("Warning: Attempted to add components to non-existent entity", "entityId", id)
 		return
 	}
 
@@ -228,7 +228,7 @@ func (ecs *ECS) AddComponents(id EntityID, comps ...any) {
 		}
 
 		if !found {
-			logrus.Warnf("Unknown component type %T for entity %d", comp, id)
+			slog.Warn("Unknown component type", "componentType", fmt.Sprintf("%T", comp), "entityId", id)
 		}
 	}
 }

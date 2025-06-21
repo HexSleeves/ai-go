@@ -5,11 +5,11 @@ package ui
 
 import (
 	"log/slog"
+	"os"
 
 	"codeberg.org/anaseto/gruid"
 	sdl "codeberg.org/anaseto/gruid-sdl"
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/config"
-	"github.com/sirupsen/logrus"
 )
 
 var driver gruid.Driver
@@ -26,7 +26,8 @@ func InitializeSDL() {
 	var err error
 	fontTileDrawer, err = GetTileDrawer(displayConfig)
 	if err != nil {
-		logrus.Fatal(err)
+		slog.Error("Failed to create font-based tile drawer", "error", err)
+		os.Exit(1)
 	}
 
 	// Create image tile manager
@@ -35,21 +36,21 @@ func InitializeSDL() {
 	// Choose initial tile manager based on configuration
 	if displayConfig.TilesEnabled {
 		currentTileManager = imageTileManager
-		logrus.Info("Using image-based tile rendering")
+		slog.Info("Using image-based tile rendering")
 	} else {
 		currentTileManager = fontTileDrawer
 		slog.Info("Using font-based tile rendering")
 	}
 
 	// Window size
-	logrus.Info("Window size: ", displayConfig.WindowWidth, "x", displayConfig.WindowHeight)
+	slog.Info("Window size: ", displayConfig.WindowWidth, "x", displayConfig.WindowHeight)
 
 	// Log the actual tile size being used
 	tileSize := currentTileManager.TileSize()
-	logrus.Infof("Tile size: %dx%d pixels", tileSize.X, tileSize.Y)
+	slog.Info("Tile size: %dx%d pixels", tileSize.X, tileSize.Y)
 
 	// Font size
-	logrus.Info("Font size: ", displayConfig.FontSize)
+	slog.Info("Font size: ", displayConfig.FontSize)
 
 	// Use configured window size
 	dr := sdl.NewDriver(sdl.Config{
@@ -93,17 +94,17 @@ func ToggleTileMode() error {
 	// Switch tile manager
 	if currentConfig.Display.TilesEnabled {
 		currentTileManager = imageTileManager
-		logrus.Info("Switched to image-based tile rendering")
+		slog.Info("Switched to image-based tile rendering")
 	} else {
 		currentTileManager = fontTileDrawer
-		logrus.Info("Switched to font-based tile rendering")
+		slog.Info("Switched to font-based tile rendering")
 	}
 
 	// Note: gruid-sdl doesn't have a direct way to change TileManager at runtime
 	// This would require reinitializing the driver, which is complex
 	// For now, we'll just update our internal state and log the change
 	// The change will take effect on next restart
-	logrus.Info("Tile mode change will take effect on next restart")
+	slog.Info("Tile mode change will take effect on next restart")
 
 	return nil
 }
@@ -117,7 +118,7 @@ func GetCurrentTileMode() bool {
 func ClearTileCache() {
 	if imageTileManager != nil {
 		imageTileManager.ClearCache()
-		logrus.Info("Tile cache cleared")
+		slog.Info("Tile cache cleared")
 	}
 }
 
@@ -139,6 +140,6 @@ func UpdateTileConfig(newConfig config.DisplayConfig) error {
 		imageTileManager.UpdateConfig(&newConfig)
 	}
 
-	logrus.Info("Tile configuration updated")
+	slog.Info("Tile configuration updated")
 	return nil
 }

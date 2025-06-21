@@ -7,11 +7,11 @@ import (
 	"fmt"
 	"image"
 	"image/png"
+	"log/slog"
 	"os"
 	"sync"
 
 	"codeberg.org/anaseto/gruid"
-	"github.com/sirupsen/logrus"
 )
 
 // SpriteAtlas manages a spritesheet and extracts individual sprites
@@ -47,7 +47,7 @@ func NewSpriteAtlas(spritesheetPath string, tileSize int, margin int) (*SpriteAt
 	tilesPerRow := (bounds.Dx() - margin) / tileSize
 	tilesPerCol := (bounds.Dy() - margin) / tileSize
 
-	logrus.Infof("Loaded spritesheet: %dx%d pixels, %dx%d tiles (%d total)",
+	slog.Info("Loaded spritesheet: %dx%d pixels, %dx%d tiles (%d total)",
 		bounds.Dx(), bounds.Dy(), tilesPerRow, tilesPerCol, tilesPerRow*tilesPerCol)
 
 	return &SpriteAtlas{
@@ -75,7 +75,7 @@ func (sa *SpriteAtlas) GetSprite(x, y int) image.Image {
 
 	// Validate coordinates
 	if x < 0 || x >= sa.tilesPerRow || y < 0 || y >= sa.tilesPerCol {
-		logrus.Warnf("Sprite coordinates out of bounds: (%d,%d), max: (%d,%d)",
+		slog.Warn("Sprite coordinates out of bounds: (%d,%d), max: (%d,%d)",
 			x, y, sa.tilesPerRow-1, sa.tilesPerCol-1)
 		return nil
 	}
@@ -117,7 +117,7 @@ func (sa *SpriteAtlas) extractSprite(x, y int) image.Image {
 // Index 0 is top-left, increases left-to-right, then top-to-bottom
 func (sa *SpriteAtlas) GetSpriteByIndex(index int) image.Image {
 	if index < 0 || index >= sa.tilesPerRow*sa.tilesPerCol {
-		logrus.Warnf("Sprite index out of bounds: %d, max: %d",
+		slog.Warn("Sprite index out of bounds: %d, max: %d",
 			index, sa.tilesPerRow*sa.tilesPerCol-1)
 		return nil
 	}
@@ -148,12 +148,12 @@ func (sa *SpriteAtlas) ClearCache() {
 	sa.mutex.Lock()
 	defer sa.mutex.Unlock()
 	sa.cache = make(map[gruid.Point]image.Image)
-	logrus.Debug("Sprite atlas cache cleared")
+	slog.Debug("Sprite atlas cache cleared")
 }
 
 // PreloadSprites preloads commonly used sprites into cache
 func (sa *SpriteAtlas) PreloadSprites(coords []gruid.Point) {
-	logrus.Infof("Preloading %d sprites into cache", len(coords))
+	slog.Info("Preloading %d sprites into cache", len(coords))
 	for _, coord := range coords {
 		sa.GetSprite(coord.X, coord.Y)
 	}

@@ -1,13 +1,13 @@
 package game
 
 import (
+	"log/slog"
 	"math/rand"
 	"slices"
 
 	"codeberg.org/anaseto/gruid"
 	"codeberg.org/anaseto/gruid/rl" // Use rl package which contains FOV
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/ecs/components"
-	"github.com/sirupsen/logrus"
 )
 
 // Game settings & map generation constants
@@ -179,7 +179,7 @@ func (m *Map) Rune(c rl.Cell) (r rune) {
 func (m *Map) placeMonsters(g *Game, room Rect) {
 	// Determine number of monsters for this room (e.g., 0 to maxMonstersPerRoom)
 	numMonsters := rand.Intn(maxMonstersPerRoom + 1) // +1 because Intn is exclusive upper bound
-	logrus.Debugf("Placing %d monsters in room: %v", numMonsters, room)
+	slog.Debug("Placing monsters in room", "numMonsters", numMonsters, "room", room)
 
 	for i := 0; i < numMonsters; i++ {
 		// Find a random walkable tile within the room bounds
@@ -193,7 +193,7 @@ func (m *Map) placeMonsters(g *Game, room Rect) {
 			g.SpawnMonster(pos)
 		} else {
 			// If tile is occupied or not walkable, we just skip spawning this monster for simplicity
-			logrus.Debugf("Failed to spawn monster at position %v - not walkable or occupied", pos)
+			slog.Debug("Failed to spawn monster", "position", pos, "reason", "not walkable or occupied")
 		}
 	}
 }
@@ -223,7 +223,7 @@ func (m *Map) placeItems(g *Game, room Rect, items map[string]components.Item) {
 			}
 
 			g.SpawnItem(selectedItem, quantity, pos)
-			logrus.Debugf("Spawned %s (x%d) at %v", selectedItem.Name, quantity, pos)
+			slog.Debug("Spawned item", "item", selectedItem.Name, "quantity", quantity, "position", pos)
 		}
 	}
 }

@@ -1,11 +1,12 @@
 package game
 
 import (
+	"log/slog"
+
 	"codeberg.org/anaseto/gruid"
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/ecs"
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/ecs/components"
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/ui"
-	"github.com/sirupsen/logrus"
 )
 
 type playerAction int
@@ -52,7 +53,7 @@ func (e actionError) Error() string {
 func (md *Model) normalModeAction(playerAction playerAction) (again bool, eff gruid.Effect, err error) {
 	g := md.game
 
-	logrus.Debugf("Normal mode action: %v\n", playerAction)
+	slog.Debug("Normal mode action", "action", playerAction)
 
 	switch playerAction {
 	case ActionNone:
@@ -116,7 +117,7 @@ func (md *Model) normalModeAction(playerAction playerAction) (again bool, eff gr
 		return md.handleToggleTilesAction()
 
 	default:
-		logrus.Debugf("Unknown action: %v\n", playerAction)
+		slog.Debug("Unknown action", "action", playerAction)
 		err = actionErrorUnknown
 	}
 
@@ -244,7 +245,7 @@ func (md *Model) handleSaveAction() (again bool, eff gruid.Effect, err error) {
 
 	if err := g.SaveGame(); err != nil {
 		g.log.AddMessagef(ui.ColorStatusBad, "Failed to save game: %v", err)
-		logrus.Errorf("Save failed: %v", err)
+		slog.Error("Save failed", "error", err)
 	} else {
 		g.log.AddMessagef(ui.ColorStatusGood, "Game saved successfully!")
 	}
@@ -263,7 +264,7 @@ func (md *Model) handleLoadAction() (again bool, eff gruid.Effect, err error) {
 
 	if err := g.LoadGame(); err != nil {
 		g.log.AddMessagef(ui.ColorStatusBad, "Failed to load game: %v", err)
-		logrus.Errorf("Load failed: %v", err)
+		slog.Error("Load failed", "error", err)
 	} else {
 		g.log.AddMessagef(ui.ColorStatusGood, "Game loaded successfully!")
 	}
@@ -342,7 +343,7 @@ func (md *Model) handleToggleTilesAction() (again bool, eff gruid.Effect, err er
 	// Toggle tile mode
 	if err := ui.ToggleTileMode(); err != nil {
 		g.log.AddMessagef(ui.ColorStatusBad, "Failed to toggle tile mode: %v", err)
-		logrus.Errorf("Toggle tile mode failed: %v", err)
+		slog.Error("Toggle tile mode failed", "error", err)
 		return true, eff, nil // Don't consume turn
 	}
 

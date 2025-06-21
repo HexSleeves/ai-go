@@ -2,10 +2,10 @@ package game
 
 import (
 	"fmt"
+	"log/slog"
 
 	"codeberg.org/anaseto/gruid"
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/ecs/components"
-	"github.com/sirupsen/logrus"
 )
 
 // UpdateState represents the current state of the game update cycle
@@ -62,19 +62,18 @@ func (md *Model) validateGameState() error {
 func (md *Model) processGameUpdate(msg gruid.Msg) gruid.Effect {
 	// Validate game state
 	if err := md.validateGameState(); err != nil {
-		logrus.WithError(err).Error("Invalid game state")
+		slog.Debug("Invalid game state", "error", err)
 		return nil
 	}
 
 	g := md.game
 
 	// Log the current game state for debugging
-	logrus.WithFields(logrus.Fields{
-		"waitingForInput": g.waitingForInput,
-		"gameMode":        md.mode,
-		"turnQueueSize":   g.turnQueue.Len(),
-		"currentTime":     g.turnQueue.CurrentTime,
-	}).Debug("Processing game update")
+	slog.Debug("Processing game update",
+		"waitingForInput", g.waitingForInput,
+		"gameMode", md.mode,
+		"turnQueueSize", g.turnQueue.Len(),
+		"currentTime", g.turnQueue.CurrentTime)
 
 	// Process based on current state
 	if g.waitingForInput {
@@ -87,28 +86,27 @@ func (md *Model) processGameUpdate(msg gruid.Msg) gruid.Effect {
 
 // handlePlayerInput processes player input when it's the player's turn
 func (md *Model) handlePlayerInput(msg gruid.Msg) gruid.Effect {
-	logrus.WithFields(logrus.Fields{
-		"messageType": fmt.Sprintf("%T", msg),
-		"gameMode":    md.mode,
-	}).Debug("Handling player input")
+	slog.Debug("Handling player input",
+		"messageType", fmt.Sprintf("%T", msg),
+		"gameMode", md.mode)
 
 	// Validate player state
 	if !md.game.ecs.EntityExists(md.game.PlayerID) {
-		logrus.Error("Player entity does not exist")
+		slog.Debug("Player entity does not exist")
 		return nil
 	}
 
 	var effect gruid.Effect
 	switch md.mode {
 	case modeQuit:
-		logrus.Debug("In quit mode, ignoring input")
+		slog.Debug("In quit mode, ignoring input")
 		return nil
 	case modeNormal:
 		effect = md.processNormalModeInput(msg)
 	case modeCharacterSheet, modeInventory, modeFullMessageLog:
 		effect = md.processScreenModeInput(msg)
 	default:
-		logrus.Warnf("Unexpected game mode: %v", md.mode)
+		slog.Debug("Unexpected game mode", "mode", md.mode)
 		return nil
 	}
 
@@ -123,7 +121,7 @@ func (md *Model) processNormalModeInput(msg gruid.Msg) gruid.Effect {
 	case gruid.MsgMouse:
 		return md.handleMouse(msg)
 	default:
-		logrus.Debugf("Unhandled message type: %T", msg)
+		slog.Debug("Unhandled message type", "type", fmt.Sprintf("%T", msg))
 		return nil
 	}
 }
@@ -134,7 +132,7 @@ func (md *Model) processScreenModeInput(msg gruid.Msg) gruid.Effect {
 	case gruid.MsgKeyDown:
 		return md.handleScreenKeyDown(msg)
 	default:
-		logrus.Debugf("Unhandled message type in screen mode: %T", msg)
+		slog.Debug("Unhandled message type in screen mode", "type", fmt.Sprintf("%T", msg))
 		return nil
 	}
 }
@@ -143,7 +141,7 @@ func (md *Model) processScreenModeInput(msg gruid.Msg) gruid.Effect {
 func (md *Model) handleKeyDown(msg gruid.MsgKeyDown) gruid.Effect {
 	again, effect, err := md.normalModeKeyDown(msg.Key, msg.Mod&gruid.ModShift != 0)
 	if err != nil {
-		logrus.WithError(err).Debug("Error processing key down")
+		slog.Debug("Error processing key down", "error", err)
 	}
 
 	if again {
@@ -157,7 +155,7 @@ func (md *Model) handleKeyDown(msg gruid.MsgKeyDown) gruid.Effect {
 func (md *Model) handleScreenKeyDown(msg gruid.MsgKeyDown) gruid.Effect {
 	again, effect, err := md.screenModeKeyDown(msg.Key)
 	if err != nil {
-		logrus.WithError(err).Debug("Error processing screen key down")
+		slog.Debug("Error processing screen key down", "error", err)
 	}
 
 	if again {
@@ -176,7 +174,7 @@ func (md *Model) handleMouse(msg gruid.MsgMouse) gruid.Effect {
 
 // processTurnQueueWithEffect processes the turn queue and returns appropriate UI effect
 func (md *Model) processTurnQueueWithEffect() gruid.Effect {
-	logrus.Debug("Processing turn queue")
+	slog.Debug("Processing turn queue")
 
 	// Process the turn queue
 	md.processTurnQueue()

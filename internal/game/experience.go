@@ -1,10 +1,11 @@
 package game
 
 import (
+	"log/slog"
+
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/ecs"
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/ecs/components"
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/ui"
-	"github.com/sirupsen/logrus"
 )
 
 // ExperienceSystem handles experience gain and leveling
@@ -37,7 +38,7 @@ func (es *ExperienceSystem) AwardExperience(entityID ecs.EntityID, amount int) {
 		es.game.log.AddMessagef(ui.ColorStatusGood, "You gain %d experience points!", amount)
 	}
 
-	logrus.Debugf("%s gained %d XP (Total: %d, Level: %d)", entityName, amount, experience.TotalXP, experience.Level)
+	slog.Debug("Entity gained XP", "entityName", entityName, "amount", amount, "totalXP", experience.TotalXP, "level", experience.Level)
 
 	// Handle level up
 	if leveledUp {
@@ -57,7 +58,7 @@ func (es *ExperienceSystem) handleLevelUp(entityID ecs.EntityID) {
 			2, 1) // From Experience.levelUp()
 	}
 
-	logrus.Infof("%s leveled up to level %d!", entityName, experience.Level)
+	slog.Info("Level up", "entityName", entityName, "level", experience.Level)
 
 	// Increase health on level up
 	if es.game.ecs.HasHealthSafe(entityID) {
@@ -227,8 +228,7 @@ func (es *ExperienceSystem) SpendSkillPoint(entityID ecs.EntityID, skillName str
 			es.game.log.AddMessagef(ui.ColorStatusGood, "You improved your %s skill!", skillName)
 		}
 
-		logrus.Debugf("%s improved %s skill (remaining skill points: %d)",
-			es.game.ecs.GetNameSafe(entityID), skillName, experience.SkillPoints)
+		slog.Debug("Skill improved", "entityName", es.game.ecs.GetNameSafe(entityID), "skill", skillName, "remainingSkillPoints", experience.SkillPoints)
 		return true
 	}
 
@@ -286,8 +286,7 @@ func (es *ExperienceSystem) SpendAttributePoint(entityID ecs.EntityID, attribute
 			es.game.log.AddMessagef(ui.ColorStatusGood, "You increased your %s!", attributeName)
 		}
 
-		logrus.Debugf("%s increased %s (remaining attribute points: %d)",
-			es.game.ecs.GetNameSafe(entityID), attributeName, experience.AttributePoints)
+		slog.Debug("Attribute increased", "entityName", es.game.ecs.GetNameSafe(entityID), "attribute", attributeName, "remainingAttributePoints", experience.AttributePoints)
 		return true
 	}
 

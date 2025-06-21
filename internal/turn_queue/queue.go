@@ -3,11 +3,11 @@ package turn
 import (
 	"container/heap"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/ecs"
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/ecs/components"
-	"github.com/sirupsen/logrus"
 )
 
 // TurnQueue manages entity turns based on time using a min-heap.
@@ -35,13 +35,13 @@ func NewTurnQueue() *TurnQueue {
 func (tq *TurnQueue) Add(entityID ecs.EntityID, time uint64) {
 	entry := TurnEntry{Time: time, EntityID: entityID}
 	heap.Push(tq.queue, entry)
-	logrus.Debugf("Added entity %d to turn queue with time %d", entityID, time)
+	slog.Debug("Added entity to turn queue", "entityId", entityID, "time", time)
 }
 
 func (tq *TurnQueue) Remove(entityID ecs.EntityID) {
 	index := tq.queue.FindIndex(entityID)
 	if index == -1 {
-		logrus.Debugf("TurnQueue: Entity %d not found in queue", entityID)
+		slog.Debug("TurnQueue: Entity not found in queue", "entityId", entityID)
 		return
 	}
 
@@ -57,7 +57,7 @@ func (tq *TurnQueue) Next() (TurnEntry, bool) {
 	}
 
 	entry := heap.Pop(tq.queue).(TurnEntry)
-	logrus.Debugf("Popped entity %d from turn queue (time: %d)", entry.EntityID, entry.Time)
+	slog.Debug("Popped entity from turn queue", "entityId", entry.EntityID, "time", entry.Time)
 	return entry, true
 }
 
@@ -70,7 +70,7 @@ func (tq *TurnQueue) Peek() (TurnEntry, bool) {
 	}
 
 	entry := (*tq.queue)[0]
-	logrus.Debugf("Peeked entity %d from turn queue (time: %d)", entry.EntityID, entry.Time)
+	slog.Debug("Peeked entity from turn queue", "entityId", entry.EntityID, "time", entry.Time)
 	return entry, true
 }
 
@@ -104,22 +104,21 @@ func (tq *TurnQueue) RestoreFromSnapshot(entries []TurnEntry) {
 // PrintQueue prints the current state of the turn queue for debugging purposes.
 func (tq *TurnQueue) PrintQueue() {
 	if tq.IsEmpty() {
-		logrus.Debug("---- Turn Queue: EMPTY ----")
+		slog.Debug("---- Turn Queue: EMPTY ----")
 		return
 	}
 
-	logrus.Debug("---- Turn Queue Contents ----")
-	logrus.Debugf("Current Game Time: %d\n", tq.CurrentTime)
-	logrus.Debugf("Queue Size: %d\n", tq.Len())
+	slog.Debug("---- Turn Queue Contents ----")
+	slog.Debug("Current Game Time", "time", tq.CurrentTime)
+	slog.Debug("Queue Size", "size", tq.Len())
 
-	logrus.Debug("Queue (in heap order):")
+	slog.Debug("Queue (in heap order):")
 	for i, entry := range *tq.queue {
 		delta := int64(entry.Time) - int64(tq.CurrentTime)
-		logrus.Debugf("[%d] EntityID: %d, Time: %d (Δ%d from current)\n",
-			i, entry.EntityID, entry.Time, delta)
+		slog.Debug("Queue entry", "index", i, "entityId", entry.EntityID, "time", entry.Time, "delta", delta)
 	}
 
-	logrus.Debug("\nProcessing order (sorted by time):")
+	slog.Debug("Processing order (sorted by time):")
 	sorted := make([]TurnEntry, len(*tq.queue))
 	copy(sorted, *tq.queue)
 
@@ -127,11 +126,10 @@ func (tq *TurnQueue) PrintQueue() {
 
 	for i, entry := range sorted {
 		delta := int64(entry.Time) - int64(tq.CurrentTime)
-		logrus.Debugf("%d. EntityID: %d, Time: %d (Δ%d from current)\n",
-			i+1, entry.EntityID, entry.Time, delta)
+		slog.Debug("Processing entry", "position", i+1, "entityId", entry.EntityID, "time", entry.Time, "delta", delta)
 	}
 
-	logrus.Debug("----------------------------")
+	slog.Debug("----------------------------")
 }
 
 // sortEntriesByTime sorts a slice of TurnEntry by time, then by EntityID for stable ordering
@@ -186,7 +184,7 @@ func (tq *TurnQueue) isValIDTurnActor(world *ecs.ECS, entityID ecs.EntityID) boo
 			return false
 		}
 	} else {
-		logrus.Errorf("TurnQueue: Entity %d has no Health component", entityID)
+		slog.Error("TurnQueue: Entity has no Health component", "entityId", entityID)
 		return false
 	}
 
@@ -216,7 +214,7 @@ func (tq *TurnQueue) CleanupDeadEntities(world *ecs.ECS) CleanupMetrics {
 		return CleanupMetrics{}
 	}
 
-	logrus.Debug("TurnQueue: Cleaning up dead entities...")
+	slog.Debug("TurnQueue: Cleaning up dead entities...")
 
 	queueSizeBefore := tq.Len()
 	startTime := time.Now()
@@ -240,8 +238,7 @@ func (tq *TurnQueue) CleanupDeadEntities(world *ecs.ECS) CleanupMetrics {
 				name = "Unknown"
 			}
 
-			logrus.Debugf("TurnQueue: Removed dead entity from turn queue: %s\n",
-				name)
+			slog.Debug("TurnQueue: Removed dead entity from turn queue", "entityName", name)
 		}
 	}
 
@@ -260,6 +257,6 @@ func (tq *TurnQueue) CleanupDeadEntities(world *ecs.ECS) CleanupMetrics {
 		ProcessingTime:  time.Since(startTime),
 	}
 
-	logrus.Debugf("TurnQueue: Cleanup finished. %s\n", metrics)
+	slog.Debug("TurnQueue: Cleanup finished", "metrics", metrics.String())
 	return metrics
 }

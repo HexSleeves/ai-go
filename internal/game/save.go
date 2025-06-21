@@ -3,6 +3,7 @@ package game
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"time"
@@ -13,7 +14,6 @@ import (
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/ecs/components"
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/log"
 	turn "github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/turn_queue"
-	"github.com/sirupsen/logrus"
 )
 
 // SaveData represents the complete game state for serialization
@@ -234,7 +234,7 @@ func (g *Game) SaveGame() error {
 		return fmt.Errorf("failed to write save file: %w", err)
 	}
 
-	logrus.Infof("Game saved to %s", savePath)
+	slog.Info("Game saved to", "path", savePath)
 	return nil
 }
 
@@ -261,8 +261,7 @@ func (g *Game) LoadGame() error {
 
 	// Version check
 	if saveData.Version != SaveVersion {
-		logrus.Warnf("Save file version %s differs from current version %s",
-			saveData.Version, SaveVersion)
+		slog.Warn("Save file version differs from current version", "version", saveData.Version, "currentVersion", SaveVersion)
 	}
 
 	// Clear current game state
@@ -292,7 +291,7 @@ func (g *Game) LoadGame() error {
 	for _, savedEntity := range saveData.Entities {
 		// Create entity with specific ID
 		if err := g.ecs.AddEntityWithID(savedEntity.ID); err != nil {
-			logrus.Errorf("Failed to create entity with ID %d: %v", savedEntity.ID, err)
+			slog.Error("Failed to create entity", "id", savedEntity.ID, "error", err)
 			continue
 		}
 		entityID := savedEntity.ID
@@ -616,7 +615,7 @@ func (g *Game) LoadGame() error {
 	// Adjust start time to account for loaded play time
 	g.stats.StartTime = time.Now().Add(-g.stats.PlayTime)
 
-	logrus.Infof("Game loaded from %s", savePath)
+	slog.Info("Game loaded from", "path", savePath)
 	return nil
 }
 

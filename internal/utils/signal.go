@@ -6,8 +6,9 @@ import (
 	"os/signal"
 	"syscall"
 
+	"log/slog"
+
 	"codeberg.org/anaseto/gruid"
-	"github.com/sirupsen/logrus"
 )
 
 // HandleSignals sets up signal handling for graceful shutdown
@@ -19,9 +20,9 @@ func HandleSignals(ctx context.Context, msgs chan<- gruid.Msg) {
 
 	select {
 	case <-ctx.Done():
-		logrus.Info("Context done, exiting")
+		slog.Info("Context done, exiting")
 	case <-sig:
-		logrus.Info("Signal received, exiting")
+		slog.Info("Signal received, exiting")
 		msgs <- gruid.MsgQuit{}
 	}
 }

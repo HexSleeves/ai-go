@@ -1,17 +1,17 @@
 package game
 
 import (
+	"log/slog"
 	"math/rand"
 
 	"codeberg.org/anaseto/gruid"
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/ecs"
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/ecs/components"
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/ui"
-	"github.com/sirupsen/logrus"
 )
 
 func (g *Game) SpawnPlayer(playerStart gruid.Point, items map[string]components.Item) {
-	logrus.Debugf("Spawning player at %v", playerStart)
+	slog.Debug("Spawning player", "position", playerStart)
 	playerID := g.ecs.AddEntity()
 	g.PlayerID = playerID // Store the player ID in the game struct
 
@@ -62,7 +62,7 @@ func (g *Game) SpawnItem(item components.Item, quantity int, pos gruid.Point) ec
 	// Add to spatial grid
 	g.spatialGrid.Add(itemID, pos)
 
-	logrus.Debugf("Spawned %s (x%d) at %v", item.Name, quantity, pos)
+	slog.Debug("Spawned item", "name", item.Name, "quantity", quantity, "position", pos)
 	return itemID
 }
 
@@ -88,7 +88,7 @@ func (g *Game) giveStartingItems(playerID ecs.EntityID, items map[string]compone
 	for _, startItem := range startingItems {
 		if item, exists := items[startItem.name]; exists {
 			if inventory.AddItem(item, startItem.quantity) {
-				logrus.Debugf("Gave player %s x%d", startItem.name, startItem.quantity)
+				slog.Debug("Gave player item", "name", startItem.name, "quantity", startItem.quantity)
 			}
 		}
 	}
@@ -116,7 +116,7 @@ func (g *Game) giveStartingItems(playerID ecs.EntityID, items map[string]compone
 		g.ecs.AddComponent(playerID, components.CEquipment, equipment)
 		g.ecs.AddComponent(playerID, components.CInventory, inventory)
 
-		logrus.Debug("Player equipped starting gear")
+		slog.Debug("Player equipped starting gear")
 	}
 }
 
@@ -224,8 +224,7 @@ func (g *Game) SpawnMonster(pos gruid.Point) {
 		components.NewTurnActor(speed),
 	)
 
-	logrus.Debugf("Created monster ID=%d at position %v, adding to turn queue at time %d",
-		monsterID, pos, g.turnQueue.CurrentTime+100)
+	slog.Debug("Created monster", "id", monsterID, "position", pos, "time", g.turnQueue.CurrentTime+100)
 
 	// Add to turn queue
 	g.turnQueue.Add(monsterID, g.turnQueue.CurrentTime+100)

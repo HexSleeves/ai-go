@@ -6,9 +6,9 @@ package ui
 import (
 	"fmt"
 	"image"
+	"log/slog"
 
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/config"
-	"github.com/sirupsen/logrus"
 	"golang.org/x/image/font/gofont/gomono"
 	"golang.org/x/image/font/opentype"
 
@@ -73,6 +73,6 @@ func GetTileDrawer(displayConfig config.DisplayConfig) (*TileDrawer, error) {
 		return nil, err
 	}
 
-	logrus.Infof("Loaded font gomono.ttf with size %d", displayConfig.FontSize)
+	slog.Info("Loaded font gomono.ttf with size %d", displayConfig.FontSize)
 	return t, nil
 }

@@ -2,11 +2,11 @@ package game
 
 import (
 	"fmt"
+	"log/slog"
 
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/ecs"
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/ecs/components"
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/ui"
-	"github.com/sirupsen/logrus"
 )
 
 // PickupAction represents an action to pick up an item
@@ -53,7 +53,7 @@ func (a PickupAction) Execute(g *Game) (cost uint, err error) {
 			g.log.AddMessagef(ui.ColorStatusGood, "You pick up %s.", pickup.Item.Name)
 		}
 
-		logrus.Debugf("%s picked up %s (quantity: %d)", entityName, pickup.Item.Name, pickup.Quantity)
+		slog.Debug("Picked up item", "entity", entityName, "item", pickup.Item.Name, "quantity", pickup.Quantity)
 		return 100, nil // Standard action cost
 	}
 
@@ -129,7 +129,7 @@ func (a DropAction) Execute(g *Game) error {
 			g.log.AddMessagef(ui.ColorStatusGood, "You drop %s.", a.ItemName)
 		}
 
-		logrus.Debugf("%s dropped %s (quantity: %d)", entityName, a.ItemName, a.Quantity)
+		slog.Debug("Dropped item", "entity", entityName, "item", a.ItemName, "quantity", a.Quantity)
 		return nil
 	}
 
@@ -212,7 +212,7 @@ func (a UseItemAction) Execute(g *Game) error {
 			g.log.AddMessagef(ui.ColorStatusGood, "You use %s.", a.ItemName)
 		}
 
-		logrus.Debugf("%s used %s", entityName, a.ItemName)
+		slog.Debug("Used item", "entity", entityName, "item", a.ItemName)
 		return nil
 	}
 
@@ -304,7 +304,7 @@ func (a EquipAction) Execute(g *Game) error {
 		}
 	}
 
-	logrus.Debugf("%s equipped %s", entityName, a.ItemName)
+	slog.Debug("Equipped item", "entity", entityName, "item", a.ItemName)
 	return nil
 }
 

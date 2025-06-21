@@ -1,11 +1,12 @@
 package game
 
 import (
+	"log/slog"
+
 	"codeberg.org/anaseto/gruid"
 	"codeberg.org/anaseto/gruid/paths"
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/ecs"
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/ecs/components"
-	"github.com/sirupsen/logrus"
 )
 
 // PathfindingStrategy defines different pathfinding approaches
@@ -83,7 +84,7 @@ func (pm *PathfindingManager) isWalkable(p gruid.Point) bool {
 // FindPath computes a path from start to goal using the best available algorithm
 func (pm *PathfindingManager) FindPath(from, to gruid.Point, strategy PathfindingStrategy) []gruid.Point {
 	if !pm.isWalkable(from) || !pm.isWalkable(to) {
-		logrus.Debugf("Pathfinding: Invalid start (%v) or goal (%v) position", from, to)
+		slog.Debug("Pathfinding: Invalid start or goal position", "from", from, "to", to)
 		return nil
 	}
 
@@ -101,14 +102,14 @@ func (pm *PathfindingManager) FindPath(from, to gruid.Point, strategy Pathfindin
 	}
 
 	if path == nil {
-		logrus.Debugf("Pathfinding: No path found from %v to %v", from, to)
+		slog.Debug("Pathfinding: No path found", "from", from, "to", to)
 		return nil
 	}
 
 	// Apply strategy-specific modifications
 	path = pm.applyStrategy(path, strategy)
 
-	logrus.Debugf("Pathfinding: Found path of length %d from %v to %v", len(path), from, to)
+	slog.Debug("Pathfinding: Found path", "length", len(path), "from", from, "to", to)
 	return path
 }
 
@@ -362,7 +363,7 @@ func (pm *PathfindingManager) UpdatePathfinding(entityID ecs.EntityID, targetPos
 		// Update the component in ECS
 		pm.game.ecs.AddComponent(entityID, components.CPathfindingComponent, *pathComp)
 
-		logrus.Debugf("Pathfinding: Recomputed path for entity %d, strategy: %v", entityID, adjustedStrategy)
+		slog.Debug("Pathfinding: Recomputed path", "entity", entityID, "strategy", adjustedStrategy)
 	}
 }
 
@@ -414,7 +415,7 @@ func (pm *PathfindingManager) applyGroupPathfindingStrategy(entityID ecs.EntityI
 	if len(nearbyEntities) > 2 {
 		// Multiple entities targeting same area - use entity avoidance
 		if strategy == StrategyDirect {
-			logrus.Debugf("Pathfinding: Switching to AvoidEntities strategy due to %d nearby entities", len(nearbyEntities))
+			slog.Debug("Pathfinding: Switching to AvoidEntities strategy", "nearby_entities", len(nearbyEntities))
 			return StrategyAvoidEntities
 		}
 	}
@@ -519,14 +520,12 @@ func (pm *PathfindingManager) GetDebugInfo() *PathfindingDebugInfo {
 
 // EnablePathfindingDebug enables debug mode for pathfinding
 func (pm *PathfindingManager) EnablePathfindingDebug() {
-	logrus.SetLevel(logrus.DebugLevel)
-	logrus.Debug("Pathfinding debug mode enabled")
+	slog.Debug("Pathfinding debug mode enabled")
 }
 
 // DisablePathfindingDebug disables debug mode for pathfinding
 func (pm *PathfindingManager) DisablePathfindingDebug() {
-	logrus.SetLevel(logrus.InfoLevel)
-	logrus.Info("Pathfinding debug mode disabled")
+	slog.Info("Pathfinding debug mode disabled")
 }
 
 // GetPathfindingStats returns performance statistics for pathfinding

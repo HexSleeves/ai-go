@@ -7,7 +7,6 @@ import (
 	"codeberg.org/anaseto/gruid"
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/ecs"
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/ecs/components"
-	"github.com/sirupsen/logrus"
 )
 
 // UpdateEntityPosition updates an entity's position and maintains the spatial grid
@@ -48,7 +47,7 @@ func (g *Game) EntityBump(entityID ecs.EntityID, delta gruid.Point) (moved bool,
 		// Check if the target entity has health (i.e., is attackable)
 		if g.ecs.HasComponent(otherID, components.CHealth) {
 			// Target is attackable. Queue an AttackAction for the bumping entity.
-			logrus.Debugf("Entity %d bumping into attackable entity %d. Queuing AttackAction.", entityID, otherID)
+			slog.Debug("Entity bumping into attackable entity", "entityId", entityID, "otherId", otherID)
 
 			// Use safe accessor - no error handling needed!
 			actor := g.ecs.GetTurnActorSafe(entityID)
@@ -70,7 +69,7 @@ func (g *Game) EntityBump(entityID ecs.EntityID, delta gruid.Point) (moved bool,
 			return false, nil
 		} else {
 			// Bumped into a non-attackable entity (e.g., another player, item, scenery)
-			slog.Debug("Entity %d bumped into non-attackable entity %d.", entityID, otherID)
+			slog.Debug("Entity bumped into non-attackable entity", "entityId", entityID, "otherId", otherID)
 			return false, nil // Block movement
 		}
 	}
