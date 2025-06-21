@@ -2,6 +2,7 @@ package game
 
 import (
 	"fmt"
+	"log/slog"
 
 	"codeberg.org/anaseto/gruid"
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/ecs"
@@ -69,7 +70,7 @@ func (g *Game) EntityBump(entityID ecs.EntityID, delta gruid.Point) (moved bool,
 			return false, nil
 		} else {
 			// Bumped into a non-attackable entity (e.g., another player, item, scenery)
-			logrus.Debugf("Entity %d bumped into non-attackable entity %d.", entityID, otherID)
+			slog.Debug("Entity %d bumped into non-attackable entity %d.", entityID, otherID)
 			return false, nil // Block movement
 		}
 	}

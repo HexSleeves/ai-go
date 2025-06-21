@@ -3,10 +3,9 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
-
-	"github.com/sirupsen/logrus"
 )
 
 // GameplayConfig holds gameplay-related settings
@@ -250,7 +249,7 @@ func LoadConfig() (*FullConfig, error) {
 		// Create default config
 		config := DefaultConfig()
 		if err := SaveConfig(&config); err != nil {
-			logrus.Warnf("Failed to save default config: %v", err)
+			slog.Warn("Failed to save default config", "error", err)
 		}
 		return &config, nil
 	}

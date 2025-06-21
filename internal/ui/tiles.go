@@ -58,9 +58,12 @@ func GetTileDrawer(displayConfig config.DisplayConfig) (*TileDrawer, error) {
 	t := &TileDrawer{}
 
 	face, err := opentype.NewFace(parsedFont, &opentype.FaceOptions{
-		Size: float64(displayConfig.FontSize),
+		// Size: float64(displayConfig.FontSize),
+		// DPI:  72,
+		Size: 24,
 		DPI:  72,
 	})
+
 	if err != nil {
 		return nil, err
 	}

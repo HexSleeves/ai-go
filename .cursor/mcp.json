@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "shrimp-task-manager": {
+      "command": "bunx",
+      "args": ["-y", "mcp-shrimp-task-manager"],
+      "env": {
+        "DATA_DIR": "/Users/lecoqjacob/Projects/go_projects/ai-go/docs",
+        "TEMPLATES_USE": "en",
+        "ENABLE_GUI": "false"
+      }
+    }
+  }
+}

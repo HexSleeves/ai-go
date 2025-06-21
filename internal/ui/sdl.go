@@ -4,6 +4,8 @@
 package ui
 
 import (
+	"log/slog"
+
 	"codeberg.org/anaseto/gruid"
 	sdl "codeberg.org/anaseto/gruid-sdl"
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/config"
@@ -36,7 +38,7 @@ func InitializeSDL() {
 		logrus.Info("Using image-based tile rendering")
 	} else {
 		currentTileManager = fontTileDrawer
-		logrus.Info("Using font-based tile rendering")
+		slog.Info("Using font-based tile rendering")
 	}
 
 	// Window size
