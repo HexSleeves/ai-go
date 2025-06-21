@@ -73,7 +73,7 @@ type SavedGameStats struct {
 
 const (
 	SaveVersion = "1.0.0"
-	SaveDir     = "saves"
+	SaveDir     = "assets/saves"
 	SaveFile    = "game.save"
 )
 
