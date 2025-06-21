@@ -61,7 +61,7 @@ func (inv *Inventory) AddItem(item Item, quantity int) bool {
 			}
 		}
 	}
-	
+
 	// Add as new stack if there's space
 	if len(inv.Items) < inv.Capacity {
 		inv.Items = append(inv.Items, ItemStack{
@@ -70,7 +70,7 @@ func (inv *Inventory) AddItem(item Item, quantity int) bool {
 		})
 		return true
 	}
-	
+
 	return false // Inventory full
 }
 
@@ -119,9 +119,9 @@ func (inv *Inventory) IsFull() bool {
 
 // Equipment component for entities that can equip items
 type Equipment struct {
-	Weapon     *Item
-	Armor      *Item
-	Accessory  *Item
+	Weapon    *Item
+	Armor     *Item
+	Accessory *Item
 }
 
 // NewEquipment creates a new empty equipment set
@@ -132,7 +132,7 @@ func NewEquipment() Equipment {
 // EquipItem equips an item in the appropriate slot
 func (eq *Equipment) EquipItem(item Item) *Item {
 	var oldItem *Item
-	
+
 	switch item.Type {
 	case ItemTypeWeapon:
 		oldItem = eq.Weapon
@@ -143,14 +143,14 @@ func (eq *Equipment) EquipItem(item Item) *Item {
 	default:
 		return nil // Cannot equip this item type
 	}
-	
+
 	return oldItem
 }
 
 // UnequipItem removes an item from the specified slot
 func (eq *Equipment) UnequipItem(itemType ItemType) *Item {
 	var item *Item
-	
+
 	switch itemType {
 	case ItemTypeWeapon:
 		item = eq.Weapon
@@ -159,7 +159,7 @@ func (eq *Equipment) UnequipItem(itemType ItemType) *Item {
 		item = eq.Armor
 		eq.Armor = nil
 	}
-	
+
 	return item
 }
 

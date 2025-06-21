@@ -144,6 +144,8 @@ func (itm *ImageTileManager) TileSize() gruid.Point {
 	// 	Y: int(float32(size) * scaleY),
 	// }
 
+	fmt.Println("TileSize: ", size)
+
 	return gruid.Point{
 		X: size,
 		Y: size,
@@ -279,6 +281,8 @@ func (itm *ImageTileManager) scaleImage(img image.Image) image.Image {
 func (itm *ImageTileManager) generateFallbackImage(c gruid.Cell) image.Image {
 	size := itm.TileSize()
 	img := image.NewRGBA(image.Rect(0, 0, size.X, size.Y))
+
+	fmt.Println("Fallback image size: ", size)
 
 	fgColor := ColorToRGBA(c.Style.Fg, true)
 	bgColor := ColorToRGBA(c.Style.Bg, false)

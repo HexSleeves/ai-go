@@ -21,7 +21,7 @@ func (c *Camera) CenterOn(worldX, worldY int) {
 	// Center the viewport on the target position
 	c.X = worldX - config.MapViewportWidth/2
 	c.Y = worldY - config.MapViewportHeight/2
-	
+
 	// Clamp camera to map boundaries
 	c.clampToMapBounds()
 }
@@ -35,7 +35,7 @@ func (c *Camera) clampToMapBounds() {
 	if c.X > config.DungeonWidth-config.MapViewportWidth {
 		c.X = config.DungeonWidth - config.MapViewportWidth
 	}
-	
+
 	// Clamp Y coordinate
 	if c.Y < 0 {
 		c.Y = 0
@@ -49,13 +49,13 @@ func (c *Camera) clampToMapBounds() {
 func (c *Camera) WorldToScreen(worldX, worldY int) (screenX, screenY int, visible bool) {
 	screenX = worldX - c.X + config.MapViewportX
 	screenY = worldY - c.Y + config.MapViewportY
-	
+
 	// Check if the position is visible in the viewport
-	visible = screenX >= config.MapViewportX && 
-			  screenX < config.MapViewportX+config.MapViewportWidth &&
-			  screenY >= config.MapViewportY && 
-			  screenY < config.MapViewportY+config.MapViewportHeight
-	
+	visible = screenX >= config.MapViewportX &&
+		screenX < config.MapViewportX+config.MapViewportWidth &&
+		screenY >= config.MapViewportY &&
+		screenY < config.MapViewportY+config.MapViewportHeight
+
 	return screenX, screenY, visible
 }
 
@@ -85,28 +85,28 @@ func (c *Camera) IsInViewport(worldX, worldY int) bool {
 func (c *Camera) Update(targetX, targetY int) {
 	// Only move camera if target is near the edge of the viewport
 	const scrollMargin = 5 // How close to edge before camera starts following
-	
+
 	currentCenterX := c.X + config.MapViewportWidth/2
 	currentCenterY := c.Y + config.MapViewportHeight/2
-	
+
 	// Calculate distance from target to viewport center
 	deltaX := targetX - currentCenterX
 	deltaY := targetY - currentCenterY
-	
+
 	// Check if we need to scroll horizontally
 	if deltaX > scrollMargin {
 		c.X += deltaX - scrollMargin
 	} else if deltaX < -scrollMargin {
 		c.X += deltaX + scrollMargin
 	}
-	
+
 	// Check if we need to scroll vertically
 	if deltaY > scrollMargin {
 		c.Y += deltaY - scrollMargin
 	} else if deltaY < -scrollMargin {
 		c.Y += deltaY + scrollMargin
 	}
-	
+
 	// Ensure camera stays within bounds
 	c.clampToMapBounds()
 }

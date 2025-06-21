@@ -29,7 +29,7 @@
     "font_size": 24,
     "font_path": "",
     "color_scheme": "classic",
-    "tiles_enabled": true,
+    "tiles_enabled": false,
     "tileset_path": "assets/tiles",
     "scale_factor_x": 1.0,
     "scale_factor_y": 1.0,

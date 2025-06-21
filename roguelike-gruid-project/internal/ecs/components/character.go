@@ -47,7 +47,7 @@ func NewExperience() Experience {
 func (exp *Experience) AddXP(amount int) bool {
 	exp.CurrentXP += amount
 	exp.TotalXP += amount
-	
+
 	if exp.CurrentXP >= exp.XPToNextLevel {
 		return exp.levelUp()
 	}
@@ -76,22 +76,22 @@ func calculateXPForLevel(level int) int {
 // Skills represents character skills
 type Skills struct {
 	// Combat Skills
-	MeleeWeapons int
+	MeleeWeapons  int
 	RangedWeapons int
-	Defense      int
-	
+	Defense       int
+
 	// Magic Skills
-	Evocation    int // Destructive magic
-	Conjuration  int // Summoning magic
-	Enchantment  int // Buff/debuff magic
-	Divination   int // Information magic
-	
+	Evocation   int // Destructive magic
+	Conjuration int // Summoning magic
+	Enchantment int // Buff/debuff magic
+	Divination  int // Information magic
+
 	// Utility Skills
-	Stealth      int
-	Lockpicking  int
-	Perception   int
-	Medicine     int
-	Crafting     int
+	Stealth     int
+	Lockpicking int
+	Perception  int
+	Medicine    int
+	Crafting    int
 }
 
 // NewSkills creates default skills
@@ -206,7 +206,7 @@ type StatusEffect struct {
 	Duration    int    // Turns remaining
 	Type        string // "buff", "debuff", "neutral"
 	Description string
-	
+
 	// Stat modifiers
 	StrengthMod     int
 	DexterityMod    int
@@ -214,18 +214,18 @@ type StatusEffect struct {
 	IntelligenceMod int
 	WisdomMod       int
 	CharismaMod     int
-	
+
 	// Combat modifiers
-	AttackMod    int
-	DefenseMod   int
-	AccuracyMod  int
-	DodgeMod     int
-	
+	AttackMod   int
+	DefenseMod  int
+	AccuracyMod int
+	DodgeMod    int
+
 	// Special effects
-	Poisoned    bool
+	Poisoned     bool
 	Regenerating bool
-	Paralyzed   bool
-	Confused    bool
+	Paralyzed    bool
+	Confused     bool
 }
 
 // StatusEffects component holds all active status effects
@@ -249,7 +249,7 @@ func (se *StatusEffects) AddEffect(effect StatusEffect) {
 			return
 		}
 	}
-	
+
 	// Add new effect
 	se.Effects = append(se.Effects, effect)
 }
@@ -268,7 +268,7 @@ func (se *StatusEffects) RemoveEffect(name string) {
 func (se *StatusEffects) UpdateEffects() []StatusEffect {
 	var expired []StatusEffect
 	var active []StatusEffect
-	
+
 	for _, effect := range se.Effects {
 		effect.Duration--
 		if effect.Duration <= 0 {
@@ -277,7 +277,7 @@ func (se *StatusEffects) UpdateEffects() []StatusEffect {
 			active = append(active, effect)
 		}
 	}
-	
+
 	se.Effects = active
 	return expired
 }
@@ -296,7 +296,7 @@ func (se *StatusEffects) HasEffect(name string) bool {
 func (se *StatusEffects) GetTotalModifiers() (Stats, Combat) {
 	var statMods Stats
 	var combatMods Combat
-	
+
 	for _, effect := range se.Effects {
 		statMods.Strength += effect.StrengthMod
 		statMods.Dexterity += effect.DexterityMod
@@ -304,12 +304,12 @@ func (se *StatusEffects) GetTotalModifiers() (Stats, Combat) {
 		statMods.Intelligence += effect.IntelligenceMod
 		statMods.Wisdom += effect.WisdomMod
 		statMods.Charisma += effect.CharismaMod
-		
+
 		combatMods.AttackPower += effect.AttackMod
 		combatMods.Defense += effect.DefenseMod
 		combatMods.Accuracy += effect.AccuracyMod
 		combatMods.DodgeChance += effect.DodgeMod
 	}
-	
+
 	return statMods, combatMods
 }

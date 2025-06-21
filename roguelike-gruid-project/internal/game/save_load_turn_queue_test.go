@@ -42,10 +42,10 @@ func TestSaveLoadTurnQueue(t *testing.T) {
 
 	// Advance time and add entities to turn queue with different times
 	game.turnQueue.CurrentTime = 1000
-	
+
 	// Add player to queue
 	game.turnQueue.Add(playerID, 1100)
-	
+
 	// Add monsters to queue with different times
 	for i, monsterID := range monsterIDs {
 		game.turnQueue.Add(monsterID, uint64(1050+i*25)) // 1050, 1075, 1100, 1125

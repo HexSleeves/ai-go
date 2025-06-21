@@ -28,7 +28,7 @@ func (es *ExperienceSystem) AwardExperience(entityID ecs.EntityID, amount int) {
 
 	// Add experience
 	leveledUp := experience.AddXP(amount)
-	
+
 	// Update the component
 	es.game.ecs.AddComponent(entityID, components.CExperience, experience)
 
@@ -36,7 +36,7 @@ func (es *ExperienceSystem) AwardExperience(entityID ecs.EntityID, amount int) {
 	if entityID == es.game.PlayerID {
 		es.game.log.AddMessagef(ui.ColorStatusGood, "You gain %d experience points!", amount)
 	}
-	
+
 	logrus.Debugf("%s gained %d XP (Total: %d, Level: %d)", entityName, amount, experience.TotalXP, experience.Level)
 
 	// Handle level up
@@ -53,7 +53,7 @@ func (es *ExperienceSystem) handleLevelUp(entityID ecs.EntityID) {
 	// Log level up
 	if entityID == es.game.PlayerID {
 		es.game.log.AddMessagef(ui.ColorStatusGood, "Level up! You are now level %d!", experience.Level)
-		es.game.log.AddMessagef(ui.ColorStatusGood, "You gained %d skill points and %d attribute points!", 
+		es.game.log.AddMessagef(ui.ColorStatusGood, "You gained %d skill points and %d attribute points!",
 			2, 1) // From Experience.levelUp()
 	}
 
@@ -103,10 +103,10 @@ func (es *ExperienceSystem) handleLevelUp(entityID ecs.EntityID) {
 		combat := es.game.ecs.GetCombatSafe(entityID)
 		combat.AttackPower += 1
 		combat.Accuracy += 2
-		if experience.Level % 3 == 0 {
+		if experience.Level%3 == 0 {
 			combat.Defense += 1
 		}
-		if experience.Level % 5 == 0 {
+		if experience.Level%5 == 0 {
 			combat.CriticalChance += 1
 		}
 		es.game.ecs.AddComponent(entityID, components.CCombat, combat)
@@ -139,7 +139,7 @@ func (es *ExperienceSystem) GetExperienceForKill(killerID, victimID ecs.EntityID
 		if es.game.ecs.HasExperienceSafe(victimID) {
 			victimExp := es.game.ecs.GetExperienceSafe(victimID)
 			levelDiff := victimExp.Level - killerExp.Level
-			
+
 			if levelDiff > 0 {
 				// Bonus for killing higher level enemies
 				baseXP += levelDiff * 3
@@ -173,7 +173,7 @@ func (es *ExperienceSystem) SpendSkillPoint(entityID ecs.EntityID, skillName str
 	}
 
 	skills := es.game.ecs.GetSkillsSafe(entityID)
-	
+
 	// Improve the specified skill
 	improved := false
 	switch skillName {
@@ -218,7 +218,7 @@ func (es *ExperienceSystem) SpendSkillPoint(entityID ecs.EntityID, skillName str
 	if improved {
 		// Spend the skill point
 		experience.SkillPoints--
-		
+
 		// Update components
 		es.game.ecs.AddComponent(entityID, components.CExperience, experience)
 		es.game.ecs.AddComponent(entityID, components.CSkills, skills)
@@ -250,7 +250,7 @@ func (es *ExperienceSystem) SpendAttributePoint(entityID ecs.EntityID, attribute
 	}
 
 	stats := es.game.ecs.GetStatsSafe(entityID)
-	
+
 	// Improve the specified attribute
 	improved := false
 	switch attributeName {
@@ -277,7 +277,7 @@ func (es *ExperienceSystem) SpendAttributePoint(entityID ecs.EntityID, attribute
 	if improved {
 		// Spend the attribute point
 		experience.AttributePoints--
-		
+
 		// Update components
 		es.game.ecs.AddComponent(entityID, components.CExperience, experience)
 		es.game.ecs.AddComponent(entityID, components.CStats, stats)

@@ -38,10 +38,10 @@ type Game struct {
 	State           GameState
 	waitingForInput bool
 
-	dungeon         *Map
-	ecs             *ecs.ECS
-	spatialGrid     *SpatialGrid
-	pathfindingMgr  *PathfindingManager
+	dungeon        *Map
+	ecs            *ecs.ECS
+	spatialGrid    *SpatialGrid
+	pathfindingMgr *PathfindingManager
 
 	PlayerID  ecs.EntityID
 	turnQueue *turn.TurnQueue

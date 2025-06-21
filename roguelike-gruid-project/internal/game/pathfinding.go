@@ -12,10 +12,10 @@ import (
 type PathfindingStrategy int
 
 const (
-	StrategyDirect PathfindingStrategy = iota // Direct path to target
-	StrategyAvoidEntities                     // Avoid other entities when possible
-	StrategyPreferOpen                        // Prefer open areas
-	StrategyStealthy                          // Avoid player FOV when possible
+	StrategyDirect        PathfindingStrategy = iota // Direct path to target
+	StrategyAvoidEntities                            // Avoid other entities when possible
+	StrategyPreferOpen                               // Prefer open areas
+	StrategyStealthy                                 // Avoid player FOV when possible
 )
 
 // PathfindingManager handles all pathfinding operations for the game
@@ -29,7 +29,7 @@ type PathfindingManager struct {
 func NewPathfindingManager(game *Game) *PathfindingManager {
 	// Create path range covering the entire map
 	mapRange := gruid.NewRange(0, 0, game.dungeon.Width, game.dungeon.Height)
-	
+
 	return &PathfindingManager{
 		pathRange: paths.NewPathRange(mapRange),
 		game:      game,
@@ -275,8 +275,8 @@ func (pm *PathfindingManager) findStealthyAlternative(from, to, avoid gruid.Poin
 func (pm *PathfindingManager) isValidPathSegment(from, middle, to gruid.Point) bool {
 	// Simple check: ensure both segments are walkable
 	return pm.isWalkable(middle) &&
-		   paths.DistanceManhattan(from, middle) <= 2 &&
-		   paths.DistanceManhattan(middle, to) <= 2
+		paths.DistanceManhattan(from, middle) <= 2 &&
+		paths.DistanceManhattan(middle, to) <= 2
 }
 
 // GetNextMove returns the next move direction from a path
@@ -327,7 +327,7 @@ func (pm *PathfindingManager) IsPathValid(path []gruid.Point) bool {
 	// Future: Add more sophisticated validation
 	// - Check if blocking entities have moved
 	// - Check if map has changed
-	
+
 	return true
 }
 
@@ -454,21 +454,21 @@ func (pm *PathfindingManager) findNearbyEntitiesWithSimilarTargets(currentPos, t
 func (pm *PathfindingManager) GetPathfindingMove(entityID ecs.EntityID) gruid.Point {
 	currentPos := pm.game.ecs.GetPositionSafe(entityID)
 	pathComp := pm.game.ecs.GetPathfindingComponentSafe(entityID)
-	
+
 	if pathComp == nil || !pathComp.PathValid || len(pathComp.CurrentPath) == 0 {
 		return gruid.Point{} // No movement
 	}
 
 	// Get next move from path
 	nextMove := pm.GetNextMove(pathComp.CurrentPath, currentPos)
-	
+
 	// Update path by removing the current position
 	if len(pathComp.CurrentPath) > 0 && pathComp.CurrentPath[0] == currentPos {
 		pathComp.CurrentPath = pathComp.CurrentPath[1:]
 		// Update the component in ECS
 		pm.game.ecs.AddComponent(entityID, components.CPathfindingComponent, *pathComp)
 	}
-	
+
 	return nextMove
 }
 
@@ -478,7 +478,7 @@ type PathfindingDebugInfo struct {
 	FailedPaths    map[ecs.EntityID]gruid.Point // Entity -> failed target
 	PathStrategies map[ecs.EntityID]PathfindingStrategy
 	AIStates       map[ecs.EntityID]components.AIState // AI state for color coding
-	LastUpdate     int // Turn number
+	LastUpdate     int                                 // Turn number
 }
 
 // GetDebugInfo returns current pathfinding debug information

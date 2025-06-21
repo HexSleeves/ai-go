@@ -191,7 +191,7 @@ func GetPathCharacter(from, to gruid.Point) rune {
 		// Diagonal - use a simple dot
 		return '·'
 	}
-	
+
 	return '·' // Default waypoint character
 }
 

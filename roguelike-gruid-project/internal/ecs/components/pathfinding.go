@@ -6,26 +6,26 @@ import "codeberg.org/anaseto/gruid"
 type PathfindingComponent struct {
 	// CurrentPath is the sequence of points the entity should follow
 	CurrentPath []gruid.Point
-	
+
 	// TargetPos is the current pathfinding target
 	TargetPos gruid.Point
-	
+
 	// PathValid indicates if the current path is still valid
 	PathValid bool
-	
+
 	// LastRecompute tracks when the path was last computed (turn number)
 	LastRecompute int
-	
+
 	// Strategy defines the pathfinding approach to use (stored as int)
 	Strategy int
-	
+
 	// RecomputeFrequency defines how often to recompute paths (in turns)
 	// 0 means only recompute when necessary
 	RecomputeFrequency int
-	
+
 	// MaxPathLength limits the maximum path length to prevent excessive computation
 	MaxPathLength int
-	
+
 	// UsePathfinding enables/disables pathfinding for this entity
 	UsePathfinding bool
 }
@@ -37,8 +37,8 @@ func NewPathfindingComponent() PathfindingComponent {
 		TargetPos:          gruid.Point{},
 		PathValid:          false,
 		LastRecompute:      0,
-		Strategy:           0, // Default strategy (StrategyDirect)
-		RecomputeFrequency: 0, // Only recompute when necessary
+		Strategy:           0,  // Default strategy (StrategyDirect)
+		RecomputeFrequency: 0,  // Only recompute when necessary
 		MaxPathLength:      50, // Reasonable default for most maps
 		UsePathfinding:     true,
 	}
@@ -182,7 +182,7 @@ func (pc *PathfindingComponent) SetStrategy(strategy int) {
 // SetMaxPathLength updates the maximum path length
 func (pc *PathfindingComponent) SetMaxPathLength(maxLength int) {
 	pc.MaxPathLength = maxLength
-	
+
 	// Truncate current path if it exceeds the new limit
 	if maxLength > 0 && len(pc.CurrentPath) > maxLength {
 		pc.CurrentPath = pc.CurrentPath[:maxLength]

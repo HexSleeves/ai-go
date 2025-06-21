@@ -52,10 +52,10 @@ type Model struct {
 	lastInputTime        time.Time
 
 	// Debug system
-	debugLevel    DebugLevel
-	showFOVDebug  bool
-	showAIDebug   bool
-	aiDebugInfo   *AIDebugInfo
+	debugLevel   DebugLevel
+	showFOVDebug bool
+	showAIDebug  bool
+	aiDebugInfo  *AIDebugInfo
 }
 
 // NewModel creates a new game model
@@ -127,16 +127,16 @@ func (md *Model) EndTurn() gruid.Effect {
 // GetDebugInfo returns current debug information
 func (md *Model) GetDebugInfo() map[string]any {
 	debugInfo := map[string]any{
-		"mode":                   md.mode,
-		"updateCount":            md.updateCount,
-		"lastUpdateTime":         md.lastUpdateTime,
-		"lastEffect":             md.lastEffect,
-		"waitingForInput":        md.game.waitingForInput,
-		"turnQueueSize":          md.game.turnQueue.Len(),
-		"currentTime":            md.game.turnQueue.CurrentTime,
-		"showPathfindingDebug":   md.showPathfindingDebug,
-		"eventQueueSize":         len(md.eventQueue),
-		"lastInputTime":          md.lastInputTime,
+		"mode":                 md.mode,
+		"updateCount":          md.updateCount,
+		"lastUpdateTime":       md.lastUpdateTime,
+		"lastEffect":           md.lastEffect,
+		"waitingForInput":      md.game.waitingForInput,
+		"turnQueueSize":        md.game.turnQueue.Len(),
+		"currentTime":          md.game.turnQueue.CurrentTime,
+		"showPathfindingDebug": md.showPathfindingDebug,
+		"eventQueueSize":       len(md.eventQueue),
+		"lastInputTime":        md.lastInputTime,
 	}
 
 	// Add pathfinding statistics if available

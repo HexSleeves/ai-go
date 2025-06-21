@@ -32,7 +32,7 @@ func NewGameError(errorType, message string, cause error) *GameError {
 	// Capture stack trace
 	buf := make([]byte, 1024)
 	n := runtime.Stack(buf, false)
-	
+
 	return &GameError{
 		Type:    errorType,
 		Message: message,
@@ -182,7 +182,7 @@ func (eh *ErrorHandler) Handle(err error) {
 			return
 		}
 	}
-	
+
 	// Default handler
 	eh.defaultHandler(err)
 }
@@ -210,7 +210,7 @@ func ValidatePositive(value int, name string) error {
 func ValidateRange(value, min, max int, name string) error {
 	if value < min || value > max {
 		return NewValidationError(
-			fmt.Sprintf("%s must be between %d and %d, got %d", name, min, max, value), 
+			fmt.Sprintf("%s must be between %d and %d, got %d", name, min, max, value),
 			nil,
 		)
 	}
@@ -230,7 +230,7 @@ func RecoverPanic() error {
 		// Capture stack trace
 		buf := make([]byte, 1024)
 		n := runtime.Stack(buf, false)
-		
+
 		return NewSystemError(
 			fmt.Sprintf("panic recovered: %v", r),
 			nil,
@@ -246,14 +246,14 @@ func SafeExecute(fn func() error) (err error) {
 			err = recovered
 		}
 	}()
-	
+
 	return fn()
 }
 
 // Retry executes a function with retry logic
 func Retry(attempts int, fn func() error) error {
 	var lastErr error
-	
+
 	for i := 0; i < attempts; i++ {
 		if err := fn(); err != nil {
 			lastErr = err
@@ -261,7 +261,7 @@ func Retry(attempts int, fn func() error) error {
 		}
 		return nil
 	}
-	
+
 	return NewSystemError(
 		fmt.Sprintf("operation failed after %d attempts", attempts),
 		lastErr,

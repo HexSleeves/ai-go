@@ -44,17 +44,15 @@ func Init() {
 
 		// Create a log file with a timestamp
 		logFilePath := filepath.Join(logDir, fmt.Sprintf("game_%s.log", time.Now().Format("20060102_150405")))
-var logFile *os.File
+		var logFile *os.File
 
- // Set log output to file if enabled
- if Config.Advanced.LogToFile {
-   // ... existing code ...
-
-  logFile, err = os.OpenFile(logFilePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-   if err == nil {
-    logrus.SetOutput(logFile)
-   } else {
-     logrus.Infof("Failed to log to file, using default stderr: %v", err)
-   }
-	logrus.Infof("Game config loaded - Debug mode: %v, Log level: %s", Config.Advanced.DebugMode, Config.Advanced.LogLevel)
+		// Set log output to file if enabled
+		logFile, err = os.OpenFile(logFilePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+		if err == nil {
+			logrus.SetOutput(logFile)
+		} else {
+			logrus.Infof("Failed to log to file, using default stderr: %v", err)
+		}
+		logrus.Infof("Game config loaded - Debug mode: %v, Log level: %s", Config.Advanced.DebugMode, Config.Advanced.LogLevel)
+	}
 }

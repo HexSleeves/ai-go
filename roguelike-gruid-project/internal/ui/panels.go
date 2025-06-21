@@ -78,7 +78,7 @@ func (p *Panel) DrawTitle(grid gruid.Grid) {
 
 	titleStyle := gruid.Style{Fg: ColorUITitle, Bg: ColorUIBackground}
 	title := " " + p.Title + " "
-	
+
 	// Truncate title if too long
 	maxTitleWidth := p.Width - 4
 	if utf8.RuneCountInString(title) > maxTitleWidth {
@@ -87,7 +87,7 @@ func (p *Panel) DrawTitle(grid gruid.Grid) {
 
 	// Center the title
 	startX := p.X + (p.Width-utf8.RuneCountInString(title))/2
-	
+
 	for i, r := range title {
 		if startX+i < p.X+p.Width-1 {
 			grid.Set(gruid.Point{X: startX + i, Y: p.Y}, gruid.Cell{Rune: r, Style: titleStyle})
@@ -106,24 +106,24 @@ func (p *Panel) GetContentArea() (x, y, width, height int) {
 // DrawText draws text within the panel, handling word wrapping
 func (p *Panel) DrawText(grid gruid.Grid, text string, style gruid.Style, startLine int) int {
 	contentX, contentY, contentWidth, contentHeight := p.GetContentArea()
-	
+
 	if startLine >= contentHeight {
 		return 0
 	}
 
 	lines := p.WrapText(text, contentWidth)
 	linesDrawn := 0
-	
+
 	for i, line := range lines {
 		if i < startLine {
 			continue
 		}
-		
+
 		lineY := contentY + i - startLine
 		if lineY >= contentY+contentHeight {
 			break
 		}
-		
+
 		for j, r := range line {
 			if j >= contentWidth {
 				break
@@ -132,7 +132,7 @@ func (p *Panel) DrawText(grid gruid.Grid, text string, style gruid.Style, startL
 		}
 		linesDrawn++
 	}
-	
+
 	return linesDrawn
 }
 
@@ -190,7 +190,7 @@ func (p *Panel) DrawProgressBar(grid gruid.Grid, x, y, width int, current, max i
 		} else {
 			r = '░'
 		}
-		
+
 		if x+i < grid.Size().X && y < grid.Size().Y {
 			grid.Set(gruid.Point{X: x + i, Y: y}, gruid.Cell{Rune: r, Style: style})
 		}
