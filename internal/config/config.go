@@ -30,11 +30,21 @@ func getSlogLevel(level string) slog.Level {
 	}
 }
 
+// RemoveTime removes the top-level time attribute.
+// It is intended to be used as a ReplaceAttr function,
+// to make example output deterministic.
+func RemoveTime(groups []string, a slog.Attr) slog.Attr {
+	if a.Key == slog.TimeKey && len(groups) == 0 {
+		return slog.Attr{}
+	}
+	return a
+}
+
 // InitSlog initializes slog with the configured log level and output
 func InitSlog() *slog.Logger {
 	var handler slog.Handler
 
-	logLevel := os.Getenv("LOG_LEVEL")
+	logLevel := os.Getenv("LOGLEVEL")
 	if logLevel == "" {
 		logLevel = Config.Advanced.LogLevel
 	}
@@ -48,10 +58,18 @@ func InitSlog() *slog.Logger {
 			Level: level,
 		})
 	} else {
-		// Use text handler for stderr output (better for development)
-		handler = slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
-			Level: level,
-		})
+
+		if level == slog.LevelDebug {
+			handler = slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
+				Level: level,
+			})
+		} else {
+			handler = slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
+				Level:       level,
+				ReplaceAttr: RemoveTime,
+			})
+		}
+
 	}
 
 	logger := slog.New(handler)
