@@ -43,14 +43,14 @@ func InitializeSDL() {
 	}
 
 	// Window size
-	slog.Info("Window size: ", displayConfig.WindowWidth, "x", displayConfig.WindowHeight)
+	slog.Info("Window size", "width", displayConfig.WindowWidth, "height", displayConfig.WindowHeight)
 
 	// Log the actual tile size being used
 	tileSize := currentTileManager.TileSize()
-	slog.Info("Tile size: %dx%d pixels", tileSize.X, tileSize.Y)
+	slog.Info("Tile size", "width", tileSize.X, "height", tileSize.Y)
 
 	// Font size
-	slog.Info("Font size: ", displayConfig.FontSize)
+	slog.Info("Font size", "size", displayConfig.FontSize)
 
 	// Use configured window size
 	dr := sdl.NewDriver(sdl.Config{
@@ -63,7 +63,6 @@ func InitializeSDL() {
 	})
 
 	dr.SetScale(displayConfig.ScaleFactorX, displayConfig.ScaleFactorY)
-	dr.PreventQuit()
 
 	driver = dr
 }

@@ -33,7 +33,14 @@ func getSlogLevel(level string) slog.Level {
 // InitSlog initializes slog with the configured log level and output
 func InitSlog() *slog.Logger {
 	var handler slog.Handler
-	level := getSlogLevel(Config.Advanced.LogLevel)
+
+	logLevel := os.Getenv("LOG_LEVEL")
+	if logLevel == "" {
+		logLevel = Config.Advanced.LogLevel
+	}
+
+	// Use LogLevel or environment variable
+	level := getSlogLevel(logLevel)
 
 	if Config.Advanced.LogToFile && logFile != nil {
 		// Use JSON handler for file output (better for production)

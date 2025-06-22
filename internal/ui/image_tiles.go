@@ -49,12 +49,12 @@ func NewImageTileManager(config *config.DisplayConfig, fontFallback sdl.TileMana
 func (itm *ImageTileManager) loadSpriteAtlas() {
 	fileName := "colored-transparent_packed.png"
 
-	slog.Info("Loading sprite atlas from: ", itm.config.TilesetPath, "/", fileName)
+	slog.Info("Loading sprite atlas", "path", itm.config.TilesetPath, "fileName", fileName)
 
 	path := filepath.Join(itm.config.TilesetPath, fileName)
 	if atlas, err := NewKenneyRoguelikeAtlas(path); err == nil {
 		itm.spriteAtlas = atlas
-		slog.Info("Loaded sprite atlas from: %s", path)
+		slog.Info("Loaded sprite atlas", "path", path)
 		return
 	}
 

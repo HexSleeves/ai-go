@@ -47,8 +47,12 @@ func NewSpriteAtlas(spritesheetPath string, tileSize int, margin int) (*SpriteAt
 	tilesPerRow := (bounds.Dx() - margin) / tileSize
 	tilesPerCol := (bounds.Dy() - margin) / tileSize
 
-	slog.Info("Loaded spritesheet: %dx%d pixels, %dx%d tiles (%d total)",
-		bounds.Dx(), bounds.Dy(), tilesPerRow, tilesPerCol, tilesPerRow*tilesPerCol)
+	slog.Info("Loaded spritesheet",
+		"width", bounds.Dx(),
+		"height", bounds.Dy(),
+		"tilesPerRow", tilesPerRow,
+		"tilesPerCol", tilesPerCol,
+		"totalTiles", tilesPerRow*tilesPerCol)
 
 	return &SpriteAtlas{
 		spritesheet: img,
@@ -75,8 +79,9 @@ func (sa *SpriteAtlas) GetSprite(x, y int) image.Image {
 
 	// Validate coordinates
 	if x < 0 || x >= sa.tilesPerRow || y < 0 || y >= sa.tilesPerCol {
-		slog.Warn("Sprite coordinates out of bounds: (%d,%d), max: (%d,%d)",
-			x, y, sa.tilesPerRow-1, sa.tilesPerCol-1)
+		slog.Warn("Sprite coordinates out of bounds",
+			"x", x, "y", y,
+			"maxX", sa.tilesPerRow-1, "maxY", sa.tilesPerCol-1)
 		return nil
 	}
 
@@ -117,8 +122,9 @@ func (sa *SpriteAtlas) extractSprite(x, y int) image.Image {
 // Index 0 is top-left, increases left-to-right, then top-to-bottom
 func (sa *SpriteAtlas) GetSpriteByIndex(index int) image.Image {
 	if index < 0 || index >= sa.tilesPerRow*sa.tilesPerCol {
-		slog.Warn("Sprite index out of bounds: %d, max: %d",
-			index, sa.tilesPerRow*sa.tilesPerCol-1)
+		slog.Warn("Sprite index out of bounds",
+			"index", index,
+			"maxIndex", sa.tilesPerRow*sa.tilesPerCol-1)
 		return nil
 	}
 
@@ -153,7 +159,7 @@ func (sa *SpriteAtlas) ClearCache() {
 
 // PreloadSprites preloads commonly used sprites into cache
 func (sa *SpriteAtlas) PreloadSprites(coords []gruid.Point) {
-	slog.Info("Preloading %d sprites into cache", len(coords))
+	slog.Info("Preloading sprites into cache", "count", len(coords))
 	for _, coord := range coords {
 		sa.GetSprite(coord.X, coord.Y)
 	}

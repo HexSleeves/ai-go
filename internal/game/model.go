@@ -6,7 +6,6 @@ package game
 
 import (
 	"log/slog"
-	"runtime"
 	"time"
 
 	"codeberg.org/anaseto/gruid"
@@ -93,10 +92,7 @@ func (md *Model) init() gruid.Effect {
 	slog.Debug("Initial turn queue processing completed")
 	slog.Debug("========= Game Initialization Completed =========")
 
-	if runtime.GOOS == "js" {
-		return nil
-	}
-
+	// No signal handling subscription needed - handled at main level
 	return gruid.Sub(utils.HandleSignals)
 }
 

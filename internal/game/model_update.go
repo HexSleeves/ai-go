@@ -6,6 +6,7 @@ import (
 
 	"codeberg.org/anaseto/gruid"
 	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/ecs/components"
+	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/utils"
 )
 
 // UpdateState represents the current state of the game update cycle
@@ -21,6 +22,21 @@ const (
 func (md *Model) Update(msg gruid.Msg) gruid.Effect {
 	if _, ok := msg.(gruid.MsgInit); ok {
 		return md.init()
+	}
+
+	// Debug: Log all message types to understand what gruid.End() creates
+	slog.Debug("Received message", "type", fmt.Sprintf("%T", msg))
+
+	// Handle quit messages (from signals or manual quit)
+	if _, ok := msg.(gruid.MsgQuit); ok {
+		slog.Info("Received MsgQuit, terminating")
+		return gruid.End()
+	}
+
+	// Handle termination signal from our custom signal handler
+	if _, ok := msg.(utils.MsgTerminate); ok {
+		slog.Info("Received termination signal, terminating gracefully")
+		return gruid.End()
 	}
 
 	// Handle quit command

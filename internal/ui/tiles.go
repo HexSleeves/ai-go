@@ -73,6 +73,6 @@ func GetTileDrawer(displayConfig config.DisplayConfig) (*TileDrawer, error) {
 		return nil, err
 	}
 
-	slog.Info("Loaded font gomono.ttf with size %d", displayConfig.FontSize)
+	slog.Info("Loaded font gomono.ttf", "size", displayConfig.FontSize)
 	return t, nil
 }

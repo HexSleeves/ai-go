@@ -32,10 +32,9 @@ go.work
 ehthumbs.db
 Thumbs.db
 
-
 .aider*
 .env*
-roguelike
+./roguelike
 !.aider.conf.yml
 
 # Added by Task Master AI
