@@ -23,7 +23,7 @@ func (g *Game) SpawnPlayer(playerStart gruid.Point, items map[string]components.
 		components.Renderable{Glyph: '@', Color: ui.ColorPlayer},
 		components.NewHealth(10),
 		components.NewTurnActor(100),
-		components.NewFOVComponent(4, g.dungeon.Width, g.dungeon.Height),
+		components.NewFOVComponent(10, g.dungeon.Width, g.dungeon.Height),
 		components.NewInventory(20),   // 20 slot inventory
 		components.NewEquipment(),     // Empty equipment slots
 		components.NewStats(),         // Starting stats
