@@ -7,7 +7,7 @@ default:
 
 # Build the game
 build:
-    go build -o ../roguelike ./cmd/roguelike
+    go build -o ./roguelike ./cmd/roguelike
 
 # Run the game
 run: build

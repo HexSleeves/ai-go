@@ -2,7 +2,7 @@ package game
 
 import (
 	"codeberg.org/anaseto/gruid"
-	"github.com/lecoqjacob/ai-go/roguelike-gruid-project/internal/utils"
+	"codeberg.org/anaseto/gruid/paths"
 )
 
 // Define the passable function once (reusing Map's IsOpaque)
@@ -17,16 +17,16 @@ func (g *Game) FOVSystem() {
 	for _, entity := range entities {
 		id, pos, fov := entity.ID, entity.Position, entity.FOV
 		fov.ClearVisible()
-		fovCalculator := fov.GetFOVCalculator()
-		visibleTiles := fovCalculator.SSCVisionMap(pos, fov.Range, g.passable, false) // Use asserted pos
-		visibleTiles = utils.DrawFilledCircle(visibleTiles, fov.Range, pos)           // Use asserted pos
 
-		// Update visibility and explored status for points in the circle
-		for _, p := range visibleTiles {
+		fovCalculator := fov.GetFOVCalculator()
+		for _, p := range fovCalculator.SSCVisionMap(pos, fov.Range, g.passable, false) {
+			if paths.DistanceManhattan(p, pos) > fov.Range {
+				continue
+			}
+
 			fov.SetVisible(p, g.dungeon.Width)
 
-			// If this is the player, also update the global explored map
-			if id == g.PlayerID {
+			if id == g.PlayerID && !g.dungeon.IsExplored(p) {
 				g.dungeon.SetExplored(p)
 			}
 		}
