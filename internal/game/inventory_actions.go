@@ -48,6 +48,9 @@ func (a PickupAction) Execute(g *Game) (cost uint, err error) {
 			g.IncrementItemsCollected()
 		}
 
+		// Trigger pickup event
+		g.TriggerPickupEvent(a.EntityID, a.ItemID, pickup.Quantity)
+
 		// Log message
 		if a.EntityID == g.PlayerID {
 			g.log.AddMessagef(ui.ColorStatusGood, "You pick up %s.", pickup.Item.Name)

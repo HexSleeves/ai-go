@@ -7,11 +7,11 @@ default:
 
 # Build the game
 build:
-    go build -o ./roguelike ./cmd/roguelike
+    go build -o ./bin/roguelike ./cmd/roguelike
 
 # Run the game
 run: build
-    ./roguelike
+    ./bin/roguelike
 
 # Run directly with Go run command (uses SDL by default)
 run-dev:
@@ -23,7 +23,7 @@ run-race:
 
 # Clean build artifacts
 clean:
-    rm -f roguelike
+    rm -f bin/roguelike
 
 # Run tests
 test:
@@ -54,7 +54,7 @@ deps:
 
 # Build for web (WebAssembly)
 build-wasm:
-    GOOS=js GOARCH=wasm go build -o ../roguelike.wasm ./cmd/roguelike
+    GOOS=js GOARCH=wasm go build -o ../bin/roguelike.wasm ./cmd/roguelike
 
 # Serve the WebAssembly build for local testing
 serve-wasm: build-wasm

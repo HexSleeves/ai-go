@@ -44,7 +44,7 @@ func RemoveTime(groups []string, a slog.Attr) slog.Attr {
 func InitSlog() *slog.Logger {
 	var handler slog.Handler
 
-	logLevel := os.Getenv("LOGLEVEL")
+	logLevel := os.Getenv("LOG")
 	if logLevel == "" {
 		logLevel = Config.Advanced.LogLevel
 	}

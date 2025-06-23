@@ -34,8 +34,8 @@ Thumbs.db
 
 .aider*
 .env*
-./roguelike
 !.aider.conf.yml
+bin/roguelike
 
 # Added by Task Master AI
 # Logs

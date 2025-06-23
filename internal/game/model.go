@@ -59,9 +59,10 @@ type Model struct {
 
 // NewModel creates a new game model
 func NewModel(grid gruid.Grid) *Model {
-	return &Model{
+	game := NewGame()
+	model := &Model{
 		grid:                 grid,
-		game:                 NewGame(),
+		game:                 game,
 		mode:                 modeNormal,
 		camera:               ui.NewCamera(40, 12), // Center of default map
 		statsPanel:           ui.NewStatsPanel(),
@@ -77,6 +78,11 @@ func NewModel(grid gruid.Grid) *Model {
 		showFOVDebug:         false,
 		showAIDebug:          false,
 	}
+	
+	// Set bidirectional reference
+	game.model = model
+	
+	return model
 }
 
 func (md *Model) init() gruid.Effect {
@@ -107,6 +113,9 @@ func (md *Model) EndTurn() gruid.Effect {
 
 	g.monstersTurn()
 	md.processTurnQueue()
+
+	// Process only game events (consequences of actions)
+	md.ProcessGameEvents()
 
 	// Track update metrics
 	md.updateCount++
@@ -270,11 +279,31 @@ func (md *Model) ProcessEventQueue() []gruid.Effect {
 	return effects
 }
 
-// processEvent processes a single event
+// ProcessGameEvents processes only GameEvent types from the queue
+func (md *Model) ProcessGameEvents() {
+	var remainingEvents []gruid.Msg
+
+	for _, msg := range md.eventQueue {
+		if gameEvent, ok := msg.(GameEvent); ok {
+			// Process game event
+			if err := gameEvent.Execute(md.game); err != nil {
+				slog.Error("Failed to execute game event", "type", gameEvent.EventType(), "error", err)
+			}
+		} else {
+			// Keep non-game events for later processing
+			remainingEvents = append(remainingEvents, msg)
+		}
+	}
+
+	// Update queue with remaining non-game events
+	md.eventQueue = remainingEvents
+}
+
+// processEvent processes a single event (UI and debug events only)
 func (md *Model) processEvent(msg gruid.Msg) gruid.Effect {
 	md.lastInputTime = time.Now()
 
-	// Handle debug key combinations first
+	// Handle debug key combinations
 	if keyMsg, ok := msg.(gruid.MsgKeyDown); ok {
 		switch keyMsg.Key {
 		case "F1":
@@ -303,7 +332,14 @@ func (md *Model) processEvent(msg gruid.Msg) gruid.Effect {
 		}
 	}
 
-	// Process normal game events through the existing Update system
+	// GameEvents are handled separately in ProcessGameEvents()
+	// Only process UI/input events here
+	if _, ok := msg.(GameEvent); ok {
+		// Skip GameEvents - they're processed in the dedicated game event phase
+		return nil
+	}
+
+	// Process normal UI/input events through the existing Update system
 	return md.processGameUpdate(msg)
 }
 

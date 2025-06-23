@@ -90,6 +90,9 @@ func (a AttackAction) Execute(g *Game) (cost uint, err error) {
 	slog.Info("Combat action", "attacker", attackerName, "attackerId", a.AttackerID, "target", targetName, "targetId", a.TargetID, "damage", damage, "targetHP", targetHealth.CurrentHP, "targetMaxHP", targetHealth.MaxHP)
 	g.ecs.AddComponent(a.TargetID, components.CHealth, targetHealth)
 
+	// Trigger combat event
+	g.TriggerCombatEvent(a.AttackerID, a.TargetID, damage, false)
+
 	// Check for death (CurrentHP <= 0) and handle it
 	if targetHealth.IsDead() {
 		g.handleEntityDeath(a.TargetID, targetName, a.AttackerID)
@@ -103,6 +106,9 @@ func (a AttackAction) Execute(g *Game) (cost uint, err error) {
 func (g *Game) handleEntityDeath(entityID ecs.EntityID, entityName string, killerID ecs.EntityID) {
 	g.log.AddMessagef(ui.ColorDeath, "%s dies!", entityName)
 	slog.Info("Entity has died", "entityName", entityName, "entityId", entityID)
+
+	// Trigger death event
+	g.TriggerDeathEvent(entityID, killerID)
 
 	if entityID == g.PlayerID {
 		g.log.AddMessagef(ui.ColorCritical, "You died! Game over!")
@@ -142,3 +148,6 @@ func (g *Game) handleEntityDeath(entityID ecs.EntityID, entityName string, kille
 	pos := g.ecs.GetPositionSafe(entityID)
 	g.spatialGrid.Remove(entityID, pos)
 }
+
+// Additional Action Types
+// Note: Inventory actions (Pickup, Drop, UseItem, Equip) are defined in inventory_actions.go
