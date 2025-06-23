@@ -53,7 +53,7 @@ This project uses Just (a command runner) for build automation. Key commands:
 
 ### Project Structure
 
-```
+```bash
 cmd/roguelike/          # Main application entry
 config/                 # JSON configuration files
 internal/
