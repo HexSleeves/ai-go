@@ -30,3 +30,9 @@ const (
 	// UI styling
 	BorderStyle = "single" // "single", "double", "none"
 )
+
+const (
+	ConfigDir   = "config"
+	ConfigFile  = "game_config.json"
+	TilesetPath = "assets/tiles"
+)
