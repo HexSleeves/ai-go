@@ -60,6 +60,7 @@ type Model struct {
 // NewModel creates a new game model
 func NewModel(grid gruid.Grid) *Model {
 	game := NewGame()
+
 	model := &Model{
 		grid:                 grid,
 		game:                 game,
@@ -78,10 +79,10 @@ func NewModel(grid gruid.Grid) *Model {
 		showFOVDebug:         false,
 		showAIDebug:          false,
 	}
-	
+
 	// Set bidirectional reference
 	game.model = model
-	
+
 	return model
 }
 

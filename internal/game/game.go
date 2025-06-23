@@ -34,22 +34,22 @@ type GameStats struct {
 
 // Game represents the main game state.
 type Game struct {
-	Depth           int       // Current dungeon depth
-	State           GameState // Current game state
-	waitingForInput bool      // Whether the game is waiting for input
+	Depth           int
+	State           GameState
+	waitingForInput bool
 
-	dungeon        *Map                // Dungeon map for game world
-	ecs            *ecs.ECS            // Entity component system
-	spatialGrid    *SpatialGrid        // Spatial grid for entity placement
-	pathfindingMgr *PathfindingManager // Pathfinding manager for entity movement
-	model          any                 // Reference to Model for event queue access
+	dungeon        *Map
+	ecs            *ecs.ECS
+	spatialGrid    *SpatialGrid
+	pathfindingMgr *PathfindingManager
+	model          *Model
 
 	PlayerID  ecs.EntityID
-	turnQueue *turn.TurnQueue // Turn queue for entity actions
-	log       *log.MessageLog // Message log for game events
-	stats     *GameStats      // Game statistics
+	turnQueue *turn.TurnQueue
+	log       *log.MessageLog
+	stats     *GameStats
 
-	rand *rand.Rand // Random number generator
+	rand *rand.Rand
 }
 
 func NewGame() *Game {

@@ -1,6 +1,7 @@
 package game
 
 import (
+	"math"
 	"testing"
 
 	"codeberg.org/anaseto/gruid"
@@ -96,7 +97,7 @@ func TestPathfindingManagerEstimation(t *testing.T) {
 	to := gruid.Point{X: 4, Y: 5}
 
 	estimation := pm.Estimation(from, to)
-	expectedManhattan := abs(4-1) + abs(5-1) // 3 + 4 = 7
+	expectedManhattan := int(math.Abs(float64(4-1)) + math.Abs(float64(5-1))) // 3 + 4 = 7
 
 	if estimation != expectedManhattan {
 		t.Errorf("Expected Manhattan distance %d, got %d", expectedManhattan, estimation)

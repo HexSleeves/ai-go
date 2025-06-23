@@ -34,7 +34,7 @@ func (e EntityDeathEvent) EventType() string { return "entity_death" }
 
 func (e EntityDeathEvent) Execute(g *Game) error {
 	slog.Info("Processing death event", "victim", e.VictimName, "killer", e.KillerName)
-	
+
 	// Award experience to killer
 	if e.KillerID != 0 && g.ecs.EntityExists(e.KillerID) {
 		expSystem := NewExperienceSystem(g)
@@ -43,40 +43,40 @@ func (e EntityDeathEvent) Execute(g *Game) error {
 			expSystem.AwardExperience(e.KillerID, xpReward)
 		}
 	}
-	
+
 	// Check for special death consequences
 	if e.VictimID == g.PlayerID {
 		g.QueueEvent(GameOverEvent{Reason: "Player death", Timestamp: time.Now()})
 	}
-	
+
 	// Check for quest completion or story triggers
 	// This is where you'd add quest system integration
-	
+
 	return nil
 }
 
 // ItemPickupEvent is triggered when an item is picked up
 type ItemPickupEvent struct {
-	EntityID    ecs.EntityID
-	ItemID      ecs.EntityID
-	EntityName  string
-	ItemName    string
-	Quantity    int
-	Timestamp   time.Time
+	EntityID   ecs.EntityID
+	ItemID     ecs.EntityID
+	EntityName string
+	ItemName   string
+	Quantity   int
+	Timestamp  time.Time
 }
 
 func (e ItemPickupEvent) EventType() string { return "item_pickup" }
 
 func (e ItemPickupEvent) Execute(g *Game) error {
 	slog.Debug("Processing pickup event", "entity", e.EntityName, "item", e.ItemName, "quantity", e.Quantity)
-	
+
 	// Check for auto-equip behavior
 	if e.EntityID == g.PlayerID {
 		if err := g.tryAutoEquip(e.ItemName); err != nil {
 			slog.Debug("Auto-equip failed", "item", e.ItemName, "error", err)
 		}
 	}
-	
+
 	// Check for item-specific consequences
 	switch e.ItemName {
 	case "Cursed Ring", "cursed_ring":
@@ -86,7 +86,7 @@ func (e ItemPickupEvent) Execute(g *Game) error {
 		// Picking up certain items might trigger events
 		g.log.AddMessagef(ui.ColorStatusGood, "Ancient magic pulses through the %s.", e.ItemName)
 	}
-	
+
 	return nil
 }
 
@@ -105,47 +105,47 @@ func (e CombatEvent) EventType() string { return "combat" }
 
 func (e CombatEvent) Execute(g *Game) error {
 	slog.Debug("Processing combat event", "attacker", e.AttackerName, "target", e.TargetName, "damage", e.Damage, "critical", e.Critical)
-	
+
 	// Apply combat consequences
 	if e.Critical {
 		g.log.AddMessagef(ui.ColorCritical, "Critical hit!")
 	}
-	
+
 	// Check for special combat triggers
 	if e.TargetID == g.PlayerID && e.Damage > 5 {
 		// High damage might trigger special effects
 		g.QueueEvent(ScreenShakeEvent{Intensity: e.Damage, Duration: time.Millisecond * 200})
 	}
-	
+
 	// Check for weapon/armor durability effects
 	// This is where you'd implement equipment degradation
-	
+
 	return nil
 }
 
 // LevelUpEvent is triggered when an entity levels up
 type LevelUpEvent struct {
-	EntityID     ecs.EntityID
-	EntityName   string
-	NewLevel     int
-	SkillPoints  int
-	StatPoints   int
-	Timestamp    time.Time
+	EntityID    ecs.EntityID
+	EntityName  string
+	NewLevel    int
+	SkillPoints int
+	StatPoints  int
+	Timestamp   time.Time
 }
 
 func (e LevelUpEvent) EventType() string { return "level_up" }
 
 func (e LevelUpEvent) Execute(g *Game) error {
 	slog.Info("Processing level up event", "entity", e.EntityName, "level", e.NewLevel)
-	
+
 	if e.EntityID == g.PlayerID {
 		g.log.AddMessagef(ui.ColorStatusGood, "Congratulations! You have reached level %d!", e.NewLevel)
 		g.log.AddMessagef(ui.ColorStatusGood, "You gain %d skill points and %d stat points.", e.SkillPoints, e.StatPoints)
-		
+
 		// Queue UI notification for stat allocation
 		g.QueueEvent(StatAllocationEvent{EntityID: e.EntityID, Points: e.StatPoints})
 	}
-	
+
 	return nil
 }
 
@@ -159,10 +159,10 @@ func (e GameOverEvent) EventType() string { return "game_over" }
 
 func (e GameOverEvent) Execute(g *Game) error {
 	slog.Info("Processing game over event", "reason", e.Reason)
-	
+
 	g.log.AddMessagef(ui.ColorCritical, "GAME OVER: %s", e.Reason)
 	g.setGameOverState()
-	
+
 	return nil
 }
 
@@ -206,24 +206,18 @@ type EventQueuer interface {
 // QueueEvent adds a game event to the model's event queue
 func (g *Game) QueueEvent(event GameEvent) {
 	if g.model != nil {
-		if queuer, ok := g.model.(EventQueuer); ok {
-			queuer.QueueEvent(event)
-			slog.Debug("Game event queued", "type", event.EventType())
-		} else {
-			slog.Warn("Model does not implement EventQueuer", "type", event.EventType())
-		}
+		g.model.QueueEvent(event)
 	} else {
 		slog.Warn("Cannot queue game event: model not set", "type", event.EventType())
 	}
 }
-
 
 // Helper functions for common event scenarios
 
 // tryAutoEquip attempts to automatically equip items for the player
 func (g *Game) tryAutoEquip(itemName string) error {
 	inventory := g.ecs.GetInventorySafe(g.PlayerID)
-	
+
 	// Find the item in inventory
 	var foundItem *components.Item
 	for _, stack := range inventory.Items {
@@ -232,13 +226,14 @@ func (g *Game) tryAutoEquip(itemName string) error {
 			break
 		}
 	}
-	
+
 	if foundItem == nil {
 		return fmt.Errorf("item not found in inventory: %s", itemName)
 	}
-	
+
 	// Only auto-equip if no equipment in that slot
-	if foundItem.Type == components.ItemTypeWeapon {
+	switch foundItem.Type {
+	case components.ItemTypeWeapon:
 		equipment := g.ecs.GetEquipmentSafe(g.PlayerID)
 		if equipment.Weapon == nil {
 			g.log.AddMessagef(ui.ColorStatusGood, "Auto-equipping %s.", itemName)
@@ -246,7 +241,7 @@ func (g *Game) tryAutoEquip(itemName string) error {
 			actor, _ := g.ecs.GetTurnActor(g.PlayerID)
 			actor.AddAction(EquipAction{EntityID: g.PlayerID, ItemName: itemName})
 		}
-	} else if foundItem.Type == components.ItemTypeArmor {
+	case components.ItemTypeArmor:
 		equipment := g.ecs.GetEquipmentSafe(g.PlayerID)
 		if equipment.Armor == nil {
 			g.log.AddMessagef(ui.ColorStatusGood, "Auto-equipping %s.", itemName)
@@ -255,7 +250,7 @@ func (g *Game) tryAutoEquip(itemName string) error {
 			actor.AddAction(EquipAction{EntityID: g.PlayerID, ItemName: itemName})
 		}
 	}
-	
+
 	return nil
 }
 
@@ -266,7 +261,7 @@ func (g *Game) TriggerDeathEvent(victimID, killerID ecs.EntityID) {
 	if killerID != 0 {
 		killerName = g.ecs.GetNameSafe(killerID)
 	}
-	
+
 	event := EntityDeathEvent{
 		VictimID:   victimID,
 		KillerID:   killerID,
@@ -274,7 +269,7 @@ func (g *Game) TriggerDeathEvent(victimID, killerID ecs.EntityID) {
 		KillerName: killerName,
 		Timestamp:  time.Now(),
 	}
-	
+
 	g.QueueEvent(event)
 }
 
@@ -282,7 +277,7 @@ func (g *Game) TriggerDeathEvent(victimID, killerID ecs.EntityID) {
 func (g *Game) TriggerPickupEvent(entityID, itemID ecs.EntityID, quantity int) {
 	entityName := g.ecs.GetNameSafe(entityID)
 	itemName := g.ecs.GetNameSafe(itemID)
-	
+
 	event := ItemPickupEvent{
 		EntityID:   entityID,
 		ItemID:     itemID,
@@ -291,7 +286,7 @@ func (g *Game) TriggerPickupEvent(entityID, itemID ecs.EntityID, quantity int) {
 		Quantity:   quantity,
 		Timestamp:  time.Now(),
 	}
-	
+
 	g.QueueEvent(event)
 }
 
@@ -299,7 +294,7 @@ func (g *Game) TriggerPickupEvent(entityID, itemID ecs.EntityID, quantity int) {
 func (g *Game) TriggerCombatEvent(attackerID, targetID ecs.EntityID, damage int, critical bool) {
 	attackerName := g.ecs.GetNameSafe(attackerID)
 	targetName := g.ecs.GetNameSafe(targetID)
-	
+
 	event := CombatEvent{
 		AttackerID:   attackerID,
 		TargetID:     targetID,
@@ -309,14 +304,14 @@ func (g *Game) TriggerCombatEvent(attackerID, targetID ecs.EntityID, damage int,
 		Critical:     critical,
 		Timestamp:    time.Now(),
 	}
-	
+
 	g.QueueEvent(event)
 }
 
 // TriggerLevelUpEvent creates and queues a level up event
 func (g *Game) TriggerLevelUpEvent(entityID ecs.EntityID, newLevel, skillPoints, statPoints int) {
 	entityName := g.ecs.GetNameSafe(entityID)
-	
+
 	event := LevelUpEvent{
 		EntityID:    entityID,
 		EntityName:  entityName,
@@ -325,6 +320,6 @@ func (g *Game) TriggerLevelUpEvent(entityID ecs.EntityID, newLevel, skillPoints,
 		StatPoints:  statPoints,
 		Timestamp:   time.Now(),
 	}
-	
+
 	g.QueueEvent(event)
 }

@@ -410,31 +410,8 @@ func (g *Game) generateIdleSequence(entityID ecs.EntityID, actor *components.Tur
 // Helper functions
 
 func (g *Game) clampToMapBounds(pos gruid.Point) gruid.Point {
-	if pos.X < 0 {
-		pos.X = 0
+	return gruid.Point{
+		X: max(0, min(pos.X, g.dungeon.Width-1)),
+		Y: max(0, min(pos.Y, g.dungeon.Height-1)),
 	}
-	if pos.Y < 0 {
-		pos.Y = 0
-	}
-	if pos.X >= g.dungeon.Width {
-		pos.X = g.dungeon.Width - 1
-	}
-	if pos.Y >= g.dungeon.Height {
-		pos.Y = g.dungeon.Height - 1
-	}
-	return pos
-}
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
 }

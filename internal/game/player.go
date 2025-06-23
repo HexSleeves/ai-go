@@ -360,7 +360,7 @@ func (md *Model) handleToggleTilesAction() (again bool, eff gruid.Effect, err er
 func (md *Model) queuePlayerMovement(direction gruid.Point) {
 	g := md.game
 	actor, _ := g.ecs.GetTurnActor(g.PlayerID)
-	
+
 	// Check if player already has queued actions
 	if actor.PeekNextAction() != nil {
 		// Player has queued actions, just add one more move
@@ -371,7 +371,7 @@ func (md *Model) queuePlayerMovement(direction gruid.Point) {
 		actor.AddAction(action)
 		return
 	}
-	
+
 	// No queued actions, create a strategic movement sequence
 	md.generatePlayerMovementSequence(direction)
 }
@@ -381,17 +381,17 @@ func (md *Model) generatePlayerMovementSequence(direction gruid.Point) {
 	g := md.game
 	actor, _ := g.ecs.GetTurnActor(g.PlayerID)
 	playerPos := g.GetPlayerPosition()
-	
+
 	// Always queue the primary movement action
 	primaryAction := MoveAction{
 		Direction: direction,
 		EntityID:  g.PlayerID,
 	}
 	actor.AddAction(primaryAction)
-	
+
 	// Check if we should queue additional actions based on context
 	nextPos := playerPos.Add(direction)
-	
+
 	// Auto-pickup behavior: if moving onto an item, queue pickup action
 	if md.shouldAutoPickup(nextPos) {
 		entities := g.ecs.EntitiesAt(nextPos)
@@ -403,7 +403,7 @@ func (md *Model) generatePlayerMovementSequence(direction gruid.Point) {
 			}
 		}
 	}
-	
+
 	// Smart door behavior: if moving toward a door, queue open action (future enhancement)
 	// Smart combat: if moving toward an enemy, this will be handled by EntityBump -> AttackAction
 }
@@ -419,7 +419,7 @@ func (md *Model) queuePlayerAction(action GameAction) {
 func (md *Model) queuePlayerActionSequence(actions []GameAction) {
 	g := md.game
 	actor, _ := g.ecs.GetTurnActor(g.PlayerID)
-	
+
 	for _, action := range actions {
 		actor.AddAction(action)
 	}
@@ -433,32 +433,3 @@ func (md *Model) shouldAutoPickup(pos gruid.Point) bool {
 	// TODO: Add configuration option for auto-pickup behavior
 	return true
 }
-
-// getPlayerActionQueueSize returns the number of queued actions for the player
-func (md *Model) getPlayerActionQueueSize() int {
-	g := md.game
-	actor, _ := g.ecs.GetTurnActor(g.PlayerID)
-	
-	// Count queued actions by peeking and consuming them
-	count := 0
-	for actor.PeekNextAction() != nil {
-		actor.NextAction() // Remove action
-		count++
-	}
-	
-	return count
-}
-
-// clearPlayerActionQueue clears all queued actions for the player
-func (md *Model) clearPlayerActionQueue() {
-	g := md.game
-	actor, _ := g.ecs.GetTurnActor(g.PlayerID)
-	
-	// Clear all queued actions
-	for actor.PeekNextAction() != nil {
-		actor.NextAction()
-	}
-}
-
-// Helper functions for direction conversion
-// Note: keyToDir function is defined in input.go

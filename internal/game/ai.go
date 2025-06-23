@@ -2,6 +2,7 @@ package game
 
 import (
 	"log/slog"
+	"math"
 	"math/rand"
 
 	"codeberg.org/anaseto/gruid"
@@ -262,14 +263,7 @@ func (g *Game) idleBehavior(entityID ecs.EntityID, aiComp *components.AIComponen
 // Helper functions
 
 func manhattanDistance(a, b gruid.Point) int {
-	return abs(a.X-b.X) + abs(a.Y-b.Y)
-}
-
-func abs(x int) int {
-	if x < 0 {
-		return -x
-	}
-	return x
+	return int(math.Abs(float64(a.X-b.X)) + math.Abs(float64(a.Y-b.Y)))
 }
 
 func getDirectionTowards(from, to gruid.Point) gruid.Point {
