@@ -74,10 +74,10 @@ type DropAction struct {
 	Quantity int
 }
 
-func (a DropAction) Execute(g *Game) error {
+func (a DropAction) Execute(g *Game) (cost uint, err error) {
 	// Check if entity has inventory
 	if !g.ecs.HasInventorySafe(a.EntityID) {
-		return fmt.Errorf("entity %d has no inventory", a.EntityID)
+		return 0, fmt.Errorf("entity %d has no inventory", a.EntityID)
 	}
 
 	// Get components
@@ -90,7 +90,7 @@ func (a DropAction) Execute(g *Game) error {
 		if a.EntityID == g.PlayerID {
 			g.log.AddMessagef(ui.ColorStatusBad, "You don't have enough %s to drop.", a.ItemName)
 		}
-		return fmt.Errorf("not enough items to drop")
+		return 0, fmt.Errorf("not enough items to drop")
 	}
 
 	// Find the item in inventory to get its details
@@ -105,7 +105,7 @@ func (a DropAction) Execute(g *Game) error {
 	}
 
 	if !found {
-		return fmt.Errorf("item %s not found in inventory", a.ItemName)
+		return 0, fmt.Errorf("item %s not found in inventory", a.ItemName)
 	}
 
 	// Remove item from inventory
@@ -133,14 +133,10 @@ func (a DropAction) Execute(g *Game) error {
 		}
 
 		slog.Debug("Dropped item", "entity", entityName, "item", a.ItemName, "quantity", a.Quantity)
-		return nil
+		return 100, nil
 	}
 
-	return fmt.Errorf("failed to remove item from inventory")
-}
-
-func (a DropAction) GetCost() int {
-	return 100 // Standard action cost
+	return 0, fmt.Errorf("failed to remove item from inventory")
 }
 
 // UseItemAction represents an action to use a consumable item
@@ -149,10 +145,10 @@ type UseItemAction struct {
 	ItemName string
 }
 
-func (a UseItemAction) Execute(g *Game) error {
+func (a UseItemAction) Execute(g *Game) (cost uint, err error) {
 	// Check if entity has inventory
 	if !g.ecs.HasInventorySafe(a.EntityID) {
-		return fmt.Errorf("entity %d has no inventory", a.EntityID)
+		return 0, fmt.Errorf("entity %d has no inventory", a.EntityID)
 	}
 
 	// Get components
@@ -164,7 +160,7 @@ func (a UseItemAction) Execute(g *Game) error {
 		if a.EntityID == g.PlayerID {
 			g.log.AddMessagef(ui.ColorStatusBad, "You don't have %s.", a.ItemName)
 		}
-		return fmt.Errorf("item not found in inventory")
+		return 0, fmt.Errorf("item not found in inventory")
 	}
 
 	// Find the item to check if it's consumable
@@ -179,7 +175,7 @@ func (a UseItemAction) Execute(g *Game) error {
 	}
 
 	if !found {
-		return fmt.Errorf("item %s not found in inventory", a.ItemName)
+		return 0, fmt.Errorf("item %s not found in inventory", a.ItemName)
 	}
 
 	// Check if item is consumable
@@ -187,7 +183,7 @@ func (a UseItemAction) Execute(g *Game) error {
 		if a.EntityID == g.PlayerID {
 			g.log.AddMessagef(ui.ColorStatusBad, "You can't use %s.", a.ItemName)
 		}
-		return fmt.Errorf("item is not consumable")
+		return 0, fmt.Errorf("item is not consumable")
 	}
 
 	// Apply item effects (simplified - just health potion for now)
@@ -216,14 +212,10 @@ func (a UseItemAction) Execute(g *Game) error {
 		}
 
 		slog.Debug("Used item", "entity", entityName, "item", a.ItemName)
-		return nil
+		return 100, nil
 	}
 
-	return fmt.Errorf("failed to remove item from inventory")
-}
-
-func (a UseItemAction) GetCost() int {
-	return 100 // Standard action cost
+	return 0, fmt.Errorf("failed to remove item from inventory")
 }
 
 // EquipAction represents an action to equip an item
@@ -232,10 +224,10 @@ type EquipAction struct {
 	ItemName string
 }
 
-func (a EquipAction) Execute(g *Game) error {
+func (a EquipAction) Execute(g *Game) (cost uint, err error) {
 	// Check if entity has inventory and equipment
 	if !g.ecs.HasInventorySafe(a.EntityID) || !g.ecs.HasEquipmentSafe(a.EntityID) {
-		return fmt.Errorf("entity %d missing inventory or equipment", a.EntityID)
+		return 0, fmt.Errorf("entity %d missing inventory or equipment", a.EntityID)
 	}
 
 	// Get components
@@ -258,7 +250,7 @@ func (a EquipAction) Execute(g *Game) error {
 		if a.EntityID == g.PlayerID {
 			g.log.AddMessagef(ui.ColorStatusBad, "You don't have %s.", a.ItemName)
 		}
-		return fmt.Errorf("item not found in inventory")
+		return 0, fmt.Errorf("item not found in inventory")
 	}
 
 	// Check if item is equippable
@@ -266,7 +258,7 @@ func (a EquipAction) Execute(g *Game) error {
 		if a.EntityID == g.PlayerID {
 			g.log.AddMessagef(ui.ColorStatusBad, "You can't equip %s.", a.ItemName)
 		}
-		return fmt.Errorf("item is not equippable")
+		return 0, fmt.Errorf("item is not equippable")
 	}
 
 	// Try to equip item
@@ -274,7 +266,7 @@ func (a EquipAction) Execute(g *Game) error {
 
 	// Remove item from inventory
 	if !inventory.RemoveItem(a.ItemName, 1) {
-		return fmt.Errorf("failed to remove item from inventory")
+		return 0, fmt.Errorf("failed to remove item from inventory")
 	}
 
 	// If there was an old item, add it back to inventory
@@ -288,8 +280,8 @@ func (a EquipAction) Execute(g *Game) error {
 			}
 
 			// Inventory is full – just drop the old item directly
-			if err := dropAction.Execute(g); err != nil {
-				return fmt.Errorf("failed to drop old item: %w", err)
+			if _, err := dropAction.Execute(g); err != nil {
+				return 0, fmt.Errorf("failed to drop old item: %w", err)
 			}
 		}
 	}
@@ -308,9 +300,5 @@ func (a EquipAction) Execute(g *Game) error {
 	}
 
 	slog.Debug("Equipped item", "entity", entityName, "item", a.ItemName)
-	return nil
-}
-
-func (a EquipAction) GetCost() int {
-	return 100 // Standard action cost
+	return 100, nil
 }

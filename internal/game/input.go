@@ -38,8 +38,34 @@ var KEYS_NORMAL = map[gruid.Key]playerAction{
 	"T":                 ActionToggleTiles,
 }
 
-// KEYS_SCREEN defines key bindings for full-screen UI modes
-var KEYS_SCREEN = map[gruid.Key]playerAction{
+// KEYS_INVENTORY_SCREEN defines key bindings for inventory screen
+var KEYS_INVENTORY_SCREEN = map[gruid.Key]playerAction{
+	gruid.KeyEscape:    ActionCloseScreen,
+	"q":                ActionCloseScreen,
+	gruid.KeyArrowUp:   ActionScrollMessagesUp,
+	gruid.KeyArrowDown: ActionScrollMessagesDown,
+	gruid.KeyPageUp:    ActionScrollMessagesUp,
+	gruid.KeyPageDown:  ActionScrollMessagesDown,
+	"k":                ActionScrollMessagesUp,
+	"j":                ActionScrollMessagesDown,
+	"u":                ActionUseSelectedItem,
+	"e":                ActionEquipSelectedItem,
+	"d":                ActionDropSelectedItem,
+}
+
+// KEYS_CHARACTER_SCREEN defines key bindings for character sheet screen
+var KEYS_CHARACTER_SCREEN = map[gruid.Key]playerAction{
+	gruid.KeyEscape:   ActionCloseScreen,
+	"q":               ActionCloseScreen,
+	gruid.KeyPageUp:   ActionScrollMessagesUp,
+	gruid.KeyPageDown: ActionScrollMessagesDown,
+	"k":               ActionScrollMessagesUp,
+	"j":               ActionScrollMessagesDown,
+	"u":               ActionScrollMessagesUp, // 'u' for page up in character screen
+}
+
+// KEYS_MESSAGE_SCREEN defines key bindings for message log screen
+var KEYS_MESSAGE_SCREEN = map[gruid.Key]playerAction{
 	gruid.KeyEscape:   ActionCloseScreen,
 	"q":               ActionCloseScreen,
 	gruid.KeyPageUp:   ActionScrollMessagesUp,

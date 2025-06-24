@@ -34,6 +34,9 @@ const (
 	ActionFullMessageLog
 	ActionCloseScreen
 	ActionToggleTiles
+	ActionUseSelectedItem
+	ActionEquipSelectedItem
+	ActionDropSelectedItem
 )
 
 type actionError int
@@ -432,4 +435,112 @@ func (md *Model) shouldAutoPickup(pos gruid.Point) bool {
 	// For now, always enable auto-pickup
 	// TODO: Add configuration option for auto-pickup behavior
 	return true
+}
+
+// Screen-specific item action handlers
+
+// handleUseSelectedItem uses the currently selected item in inventory screen
+func (md *Model) handleUseSelectedItem() (again bool, eff gruid.Effect, err error) {
+	g := md.game
+	inventory := g.ecs.GetInventorySafe(g.PlayerID)
+
+	if len(inventory.Items) == 0 {
+		g.log.AddMessagef(ui.ColorStatusBad, "Your inventory is empty.")
+		return true, eff, nil // Don't consume turn
+	}
+
+	selectedIndex := md.inventoryScreen.GetSelectedIndex()
+	if selectedIndex >= len(inventory.Items) {
+		g.log.AddMessagef(ui.ColorStatusBad, "Invalid item selection.")
+		return true, eff, nil // Don't consume turn
+	}
+
+	selectedItem := inventory.Items[selectedIndex]
+
+	// Check if item is consumable
+	if selectedItem.Item.Type != components.ItemTypeConsumable {
+		g.log.AddMessagef(ui.ColorStatusBad, "You can't use %s.", selectedItem.Item.Name)
+		return true, eff, nil // Don't consume turn
+	}
+
+	// Close inventory screen and use the item
+	md.mode = modeNormal
+	action := UseItemAction{
+		EntityID: g.PlayerID,
+		ItemName: selectedItem.Item.Name,
+	}
+
+	actor, _ := g.ecs.GetTurnActor(g.PlayerID)
+	actor.AddAction(action)
+
+	return false, eff, nil
+}
+
+// handleEquipSelectedItem equips the currently selected item in inventory screen
+func (md *Model) handleEquipSelectedItem() (again bool, eff gruid.Effect, err error) {
+	g := md.game
+	inventory := g.ecs.GetInventorySafe(g.PlayerID)
+
+	if len(inventory.Items) == 0 {
+		g.log.AddMessagef(ui.ColorStatusBad, "Your inventory is empty.")
+		return true, eff, nil // Don't consume turn
+	}
+
+	selectedIndex := md.inventoryScreen.GetSelectedIndex()
+	if selectedIndex >= len(inventory.Items) {
+		g.log.AddMessagef(ui.ColorStatusBad, "Invalid item selection.")
+		return true, eff, nil // Don't consume turn
+	}
+
+	selectedItem := inventory.Items[selectedIndex]
+
+	// Check if item is equippable
+	if selectedItem.Item.Type != components.ItemTypeWeapon && selectedItem.Item.Type != components.ItemTypeArmor {
+		g.log.AddMessagef(ui.ColorStatusBad, "You can't equip %s.", selectedItem.Item.Name)
+		return true, eff, nil // Don't consume turn
+	}
+
+	// Close inventory screen and equip the item
+	md.mode = modeNormal
+	action := EquipAction{
+		EntityID: g.PlayerID,
+		ItemName: selectedItem.Item.Name,
+	}
+
+	actor, _ := g.ecs.GetTurnActor(g.PlayerID)
+	actor.AddAction(action)
+
+	return false, eff, nil
+}
+
+// handleDropSelectedItem drops the currently selected item in inventory screen
+func (md *Model) handleDropSelectedItem() (again bool, eff gruid.Effect, err error) {
+	g := md.game
+	inventory := g.ecs.GetInventorySafe(g.PlayerID)
+
+	if len(inventory.Items) == 0 {
+		g.log.AddMessagef(ui.ColorStatusBad, "Your inventory is empty.")
+		return true, eff, nil // Don't consume turn
+	}
+
+	selectedIndex := md.inventoryScreen.GetSelectedIndex()
+	if selectedIndex >= len(inventory.Items) {
+		g.log.AddMessagef(ui.ColorStatusBad, "Invalid item selection.")
+		return true, eff, nil // Don't consume turn
+	}
+
+	selectedItem := inventory.Items[selectedIndex]
+
+	// Close inventory screen and drop the item
+	md.mode = modeNormal
+	action := DropAction{
+		EntityID: g.PlayerID,
+		ItemName: selectedItem.Item.Name,
+		Quantity: 1,
+	}
+
+	actor, _ := g.ecs.GetTurnActor(g.PlayerID)
+	actor.AddAction(action)
+
+	return false, eff, nil
 }

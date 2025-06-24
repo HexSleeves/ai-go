@@ -26,12 +26,8 @@ clean:
     rm -f bin/roguelike
 
 # Run tests
-test:
-    go test ./...
-
-# Run tests with verbose output
-test-verbose:
-    go test -v ./...
+test *ARGS:
+    go test ./... {{ARGS}}
 
 # Run tests for specific package
 test-package package:

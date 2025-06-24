@@ -178,7 +178,13 @@ func (md *Model) handleScreenKeyDown(msg gruid.MsgKeyDown) gruid.Effect {
 		return effect
 	}
 
-	// Screen modes don't end turns, just return the effect
+	// Check if we switched back to normal mode and queued an action
+	if md.mode == modeNormal {
+		// Action was queued, process the turn
+		return md.EndTurn()
+	}
+
+	// Screen modes don't end turns by default, just return the effect
 	return effect
 }
 
@@ -212,7 +218,23 @@ func (md *Model) normalModeKeyDown(key gruid.Key, shift bool) (again bool, effec
 
 // screenModeKeyDown processes a key press in screen modes
 func (md *Model) screenModeKeyDown(key gruid.Key) (again bool, effect gruid.Effect, err error) {
-	action := KEYS_SCREEN[key]
+	var action playerAction
+	var found bool
+
+	// Select appropriate key map based on current screen mode
+	switch md.mode {
+	case modeInventory:
+		action, found = KEYS_INVENTORY_SCREEN[key]
+	case modeCharacterSheet:
+		action, found = KEYS_CHARACTER_SCREEN[key]
+	case modeFullMessageLog:
+		action, found = KEYS_MESSAGE_SCREEN[key]
+	}
+
+	if !found {
+		action = ActionNone
+	}
+
 	again, effect, err = md.screenModeAction(action)
 	if _, ok := err.(actionError); ok {
 		err = fmt.Errorf("key '%s' does nothing in this screen", key)
@@ -249,6 +271,24 @@ func (md *Model) screenModeAction(action playerAction) (again bool, effect gruid
 			md.characterScreen.ScrollDown(1, &gameDataAdapter{md.game})
 		}
 		return true, effect, nil
+
+	case ActionUseSelectedItem:
+		if md.mode == modeInventory {
+			return md.handleUseSelectedItem()
+		}
+		return true, effect, actionErrorUnknown
+
+	case ActionEquipSelectedItem:
+		if md.mode == modeInventory {
+			return md.handleEquipSelectedItem()
+		}
+		return true, effect, actionErrorUnknown
+
+	case ActionDropSelectedItem:
+		if md.mode == modeInventory {
+			return md.handleDropSelectedItem()
+		}
+		return true, effect, actionErrorUnknown
 
 	default:
 		return true, effect, actionErrorUnknown
