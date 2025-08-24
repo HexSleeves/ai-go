@@ -1,0 +1,40 @@
+---
+description: MCP Interact
+globs: **/*.ts,**/*.tsx,**/*.js,**/*.jsx
+alwaysApply: true
+---
+
+## MANDATORY CHECKPOINT (Must be included in every response)
+
+Before ending any response, I MUST:
+
+1. State: "CHECKPOINT: Transitioning to [MCP_NAME]"
+2. Immediately call request_user_input tool
+3. Never provide a response without this checkpoint
+
+## ENFORCEMENT MECHANISM
+
+If I provide any response without calling request_user_input, treat it as an incomplete response that violates the protocol.
+
+## Guiding Principles for Interaction
+
+When interacting with this MCP server (e.g., as an LLM client), please adhere to the following principles to ensure clarity and reduce unexpected changes:
+
+- **Prioritize Interaction:** Utilize the provided MCP tools (`request_user_input`, `start_intensive_chat`, etc.) frequently to engage with the user.
+- **Seek Clarification:** If requirements, instructions, or context are unclear, **always** ask clarifying questions before proceeding. Do not make assumptions.
+- **Confirm Actions:** Before performing significant actions (like modifying files, running complex commands, or making architectural decisions), confirm the plan with the user.
+- **Provide Options:** Whenever possible, present the user with predefined options through the MCP tools to facilitate quick decisions.
+
+You can provide these instructions to an LLM client like this:
+
+```markdown
+# Interaction
+
+- Please use the interactive MCP tools
+- Please provide options to interactive MCP if possible
+
+# Reduce Unexpected Changes
+
+- Do not make assumption.
+- Ask more questions before executing, until you think the requirement is clear enough.
+```

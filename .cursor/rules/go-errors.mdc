@@ -1,0 +1,25 @@
+---
+description: Error handling and logging conventions for Go code in this repo
+globs: cmd/**/*.go, internal/**/*.go, *.go
+alwaysApply: true
+---
+
+- **Error values**
+  - Prefer sentinel `var ErrXxx = errors.New("...")` for stable checks.
+  - Wrap with `%w` and `fmt.Errorf` to retain cause; avoid string matching.
+
+- **Returning errors**
+  - Return early on error; avoid deep nesting.
+  - Do not log and return the same error at the same level.
+  - Use context in messages: include operation and key identifiers.
+
+- **Comparing errors**
+  - Use `errors.Is` and `errors.As` for checks and type extraction.
+
+- **Logging**
+  - Prefer structured logging; include `op`, `id`, and relevant fields.
+  - Avoid logging secrets or PII. Redact tokens and paths when needed.
+
+- **Retries**
+  - Retry only idempotent operations with bounded backoff.
+  - Expose context cancellation; respect deadlines.

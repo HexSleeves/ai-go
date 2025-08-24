@@ -1,0 +1,26 @@
+---
+description: Concurrency, goroutines, and channels rules for Go in this repo
+globs: cmd/**/*.go, internal/**/*.go, *.go
+alwaysApply: true
+---
+
+- **Context first**
+  - All goroutine entry points accept `context.Context` or derive one; cancel on exit.
+
+- **Goroutines**
+  - Always supervise goroutines; use errgroup when appropriate.
+  - Prefer worker pools for bounded parallelism; avoid unbounded goroutine creation.
+
+- **Channels**
+  - Close channels from the sender side only; never close receive-only channels.
+  - Document channel buffer sizes; keep small unless justified.
+
+- **Synchronization**
+  - Prefer channels for ownership transfer; use `sync.Mutex` for protecting shared state.
+  - Avoid mixing locks and channels for the same data flow.
+
+- **Select usage**
+  - Always include a `<-ctx.Done()` case in long-lived selects.
+
+- **Data races**
+  - Run `-race` in CI; fix races before merging.

@@ -1,0 +1,25 @@
+---
+description: Testing conventions for Go code in this repository
+globs: internal/**/*.go, cmd/**/*.go, *_test.go
+alwaysApply: true
+---
+
+- **Test structure**
+  - Use table-driven tests with descriptive case names.
+  - Keep tests independent; no hidden global state.
+
+- **Assertions**
+  - Prefer plain `testing` package; avoid heavy frameworks.
+  - Use helper functions with `t.Helper()` for reuse.
+
+- **Randomness and time**
+  - Seed RNG deterministically in tests; inject time via interfaces when needed.
+
+- **Fixtures**
+  - Place test data under `testdata/`; never assert on whitespace-only diffs.
+
+- **Parallelism**
+  - Use `t.Parallel()` where safe; avoid shared mutable state.
+
+- **Coverage and race**
+  - Aim for meaningful coverage; run with `-race` in CI.

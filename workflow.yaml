@@ -1,0 +1,68 @@
+version: 1.0.0
+project_name: roguelike-workflow
+specs:
+    spec_dir: .kiro/specs
+    task_tracker: true
+    auto_generation: true
+    validation_rules:
+        - requirements
+        - design
+        - tasks
+content:
+    luban_enabled: false
+    luban_server_url: http://localhost:8080
+    content_dir: assets/content
+    output_dir: internal/content/generated
+    hot_reload: true
+    validation_level: normal
+balance:
+    metrics_enabled: true
+    simulation_enabled: true
+    analysis_threshold: 0.8
+    recommendation_mode: hybrid
+    metrics_to_collect:
+        - combat
+        - progression
+        - economy
+testing:
+    unit_tests_enabled: true
+    integration_tests_enabled: true
+    gameplay_tests_enabled: true
+    performance_tests_enabled: true
+    coverage_threshold: 0.8
+    auto_generation: true
+performance:
+    profiling_enabled: true
+    monitoring_enabled: true
+    optimization_enabled: false
+    threshold_cpu: 80
+    threshold_memory: 512
+    threshold_frame_time: 16.67
+plugins:
+    enabled: false
+    plugin_dir: plugins
+    sandbox_enabled: true
+    security_level: strict
+    allowed_plugins: []
+    blocked_plugins: []
+documentation:
+    auto_generation: true
+    output_format: markdown
+    include_examples: true
+    include_diagrams: true
+    update_frequency: on_change
+cicd:
+    enabled: false
+    provider: github
+    auto_deploy: false
+    quality_gates:
+        - tests
+        - coverage
+        - security
+    notification_level: errors
+debug:
+    visualization_enabled: true
+    time_travel_enabled: false
+    hot_reload_enabled: true
+    log_level: info
+    metrics_enabled: true

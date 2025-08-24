@@ -1,0 +1,28 @@
+---
+description: Go style guide and conventions for this repository
+globs: cmd/**/*.go, internal/**/*.go, *.go
+alwaysApply: true
+---
+
+- **Formatting**
+  - Use `gofmt`/`goimports` on save. No manual alignment.
+  - Group imports: stdlib, third-party, then internal with blank lines between.
+
+- **Packages and files**
+  - Package names are lowercase, no underscores; match directory names.
+  - Avoid stutter: `package inventory` → `type Manager`, not `InventoryManager`.
+  - One top-level type per file when it improves navigation.
+
+- **Naming**
+  - Exported identifiers use PascalCase and have doc comments.
+  - Error vars: `ErrXxx`. Context values keys are unexported types.
+
+- **Receivers**
+  - Value receiver for small, immutable types; pointer for mutating or large types.
+  - Keep receiver names short but meaningful: `g` for `Game`, `p` for `Player`.
+
+- **Zero values**
+  - Prefer zero-value initialization; constructors only when invariants are required.
+
+- **Constants and iota**
+  - Use `iota` for enums; provide `String()` when printed.

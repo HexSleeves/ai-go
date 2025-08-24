@@ -1,0 +1,59 @@
+---
+description: when user mentions /spec, apply this rule
+alwaysApply: false
+---
+
+# Spec-Driven Development Workflow
+
+## Usage
+
+/spec - Automatically selects spec or picks the user guided spec ID from `docs/specs.json` (create if file not found) and prepares to plan and execute it in context of the `docs/prd.md`
+
+## Command Implementation
+
+When invoked, drive the AI agent through a complete Spec-Driven Development cycle. Present every step as numbered tasks, allow user review, then execute and validate before proceeding.
+
+1. **Clarify Requirements**
+
+   - Ask follow-up questions to resolve ambiguities in the high-level spec.
+   - Identify stakeholders, functional and non-functional requirements.
+
+2. **Draft High-Level Specification**
+
+   - Produce a structured spec document with sections:
+     • Overview & Goals
+     • API & Data Models
+     • UI/UX Mockups or Wireframes
+     • Acceptance Criteria & Edge Cases
+
+3. **Generate Implementation Plan**
+
+   - Break the spec into discrete, ordered tasks (e.g., “Define user schema,” “Implement POST /users endpoint,” “Add unit tests for user creation”).
+   - Show dependencies and estimated effort per task.
+
+4. **Execute Tasks Iteratively**
+   For each task:
+
+   - Open or create files; inject code, configurations, tests, and docs.
+   - Present a diff and a brief rationale for review.
+   - Upon user approval, apply changes.
+
+5. **Automated Validation & Quality Gates**
+
+   - After coding tasks complete, run or generate:
+     • Unit and integration tests
+     • Static analysis (lint, type checks)
+     • Security and performance scans
+   - Report any failures as new tasks for remediation.
+
+6. **Documentation & Delivery**
+
+   - Update README/CHANGELOG with feature summary and usage examples.
+   - Generate inline code comments and API docs.
+   - Package and version artifacts as needed.
+
+7. **Feedback & Iteration**
+   - Summarize completed work and request user feedback.
+   - If changes are requested, loop back to the relevant step.
+
+> **Usage**: In any chat or inline edit, reference this rule with `@spec-driven-development`. The agent will include these instructions at the start of its context and follow them unless overridden.

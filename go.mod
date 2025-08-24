@@ -7,6 +7,7 @@ require (
 	codeberg.org/anaseto/gruid-js v0.2.0
 	codeberg.org/anaseto/gruid-sdl v0.5.0
 	golang.org/x/image v0.28.0
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
